@@ -5,14 +5,114 @@ export const curriculumName = "MLOps Engineer, Credit & Lending Track";
 export const curriculumIntro = [
   "This is a personal study plan for an MLOps role at a digital lending or credit card fintech, the kind of place processing loan applications for people who don't have a long credit history. High volume, low latency, real money on the line every time a model says yes or no.",
   "A posting like this reads like a normal MLOps role at first glance: Kubernetes, CI/CD, monitoring, Python, a cloud data warehouse. But lending is not a normal ML domain. A recommender that's 2% off just shows a slightly worse product. A credit model that's 2% off either lends money to someone who won't pay it back, or denies someone who would have. Both directions cost real money and, in a regulated market, real legal exposure.",
-  "7 modules. The first 3 are foundations any MLOps role needs. The next 3 are what changes when the model decides who gets a loan. The last one is a meta-skill: how to take a vague case-study prompt and turn it into a plan in the room, because that's usually how these interviews are run.",
+  "8 modules now instead of 7. A new module 1 got added after the first pass through this curriculum felt too shallow: it named Kubernetes, databases, and streaming without ever explaining what any of them actually are underneath. This curriculum is written for someone with a weak foundation across ML, software engineering, infra, and DevOps, not someone brushing up. So module 1 starts from the bottom, a database is a program on a disk, a container is a process with some Linux features turned on, and builds up from there before the rest of the modules layer credit-specific concerns on top.",
 ];
 
 export const modules: Module[] = [
   {
+    id: "systems-foundations",
+    name: "Systems Foundations",
+    order: 1,
+    intro:
+      "Everything else in this curriculum assumes you already know what a database, a container, an orchestrator, and a stream actually are underneath the marketing terms. This module builds that floor first, from the ground up, so nothing later has to be taken on faith.",
+    concepts: [
+      {
+        id: "what-a-database-promises",
+        name: "What a Database Actually Promises: ACID",
+        hook: "A database is a program that writes bytes to a disk so they survive a crash. Everything else is a promise layered on top of that.",
+        body: [
+          "Start at the bottom. A database management system, or DBMS, is software that controls access to data so many people can read and write it at once without corrupting it or stepping on each other. Before relational databases existed, programs just wrote to files directly, and every application had to reinvent its own answer to a hard question: what happens if 2 processes write to the same record at the same time, or the machine loses power halfway through a write? A database's whole job is to answer that question once, correctly, so every application built on top of it doesn't have to.",
+          "The answer the database industry converged on is named with an acronym, ACID: atomicity, consistency, isolation, durability. Atomicity means a group of writes either all happen or none happen. If you're moving money from account A to account B, that's 2 writes (debit A, credit B), and if the process crashes between them, atomicity is the guarantee that the database rolls back to before either write happened, not left half done with money vanished. Isolation means 2 transactions running at the same time can't see each other's half-finished work: if 2 people are both trying to increment the same counter, isolation stops them from both reading 42, both writing 43, and losing 1 of the 2 increments. Durability means once the database says a write succeeded, it survives a crash, which in practice means the write went to nonvolatile storage (disk or SSD) before the database confirmed it, often via a write-ahead log so even a corrupted data file can be replayed back to a known-good state.",
+          "Consistency, the C, is the odd one out. It doesn't mean what the other 3 mean: it's not a guarantee the database makes for you, it's a property of your application's own rules (your invariants) that the other 3 guarantees help you preserve. 'Every approved loan has exactly 1 signoff row' is a consistency invariant. The database can enforce it with a constraint if you tell it to, but the database has no idea what your invariants are unless you say so.",
+          "Why this matters before Kubernetes or feature stores make any sense: a model registry, a period-signoff table, an audit trail, every one of those is just a database table with specific ACID guarantees leaned on for a specific reason. When module 3 says 'a model registry tied to a data-versioning tool' should let you name the exact model version live for any past prediction, what's actually doing that work is atomicity (the version pointer and the model artifact get written together or not at all) and durability (once written, it doesn't quietly disappear). Naming the guarantee, not just the tool, is what separates a memorized answer from an understood one.",
+        ],
+        whyItMatters:
+          "Model registries, feature stores, and period-signoff tables are all just databases with a job. If the underlying guarantees (atomicity, isolation, durability) aren't solid, none of the higher-level promises this curriculum makes later (traceable predictions, safe retries, an audit trail a regulator can trust) actually hold.",
+        estimatedHours: 8,
+      },
+      {
+        id: "how-databases-stay-fast",
+        name: "Why Some Queries Are Fast and Others Fall Over",
+        hook: "A table with 10 million rows and no index isn't a slow database, it's a database doing exactly what you asked: read every row.",
+        body: [
+          "A database table on disk is, underneath everything, just a big file. If you ask 'find the row where document_id equals this UUID' and there's no index, the database has exactly 1 option: read every row from the start until it finds a match, or reaches the end. That's a full table scan, and its cost grows linearly with table size. At 100 rows nobody notices. At 100 million rows, a query that used to take milliseconds takes minutes, and a service that used to feel instant starts timing out.",
+          "An index is a second, smaller data structure that lets the database skip most of that scan. The simplest version is a hash index: a hash table mapping each key to the byte offset where its row lives on disk, so a lookup by exact key becomes 1 hash computation and 1 disk read, no scan at all. The catch is a hash index only answers exact-match questions, not range questions like 'every document between these 2 dates,' because a hash function deliberately scatters similar keys to unrelated locations.",
+          "For range queries, the standard answer is a B-tree: a sorted, balanced tree structure where each lookup walks down a small number of levels (typically 3 or 4 even for huge tables) to find the range of rows it needs, and because the tree stays sorted, 'give me everything between these 2 values' is a fast, contiguous read instead of a scan. B-trees are the default index structure in almost every relational database, which is why 'add an index on that column' is the first thing anyone reaches for when a query that used to be fast starts crawling.",
+          "The other structure worth knowing by name is the LSM-tree, used by databases optimized for heavy write volume (Cassandra, and DuckDB's own storage engine leans on similar sorted-run ideas). Instead of updating the on-disk structure in place for every write, an LSM-tree buffers writes in memory and periodically flushes sorted batches to disk, merging older batches in the background. That trades some read complexity (a lookup may have to check several sorted files) for dramatically cheaper writes, which is exactly the tradeoff a system logging every scoring request, every feature snapshot, every training run needs to make on purpose, not by accident.",
+          "None of this is trivia. When a feature store's real-time lookup path has to answer in a few milliseconds (module 5's autoscaling concept), the reason that's achievable at all is that someone chose the right index structure for the access pattern, exact-key lookups get a hash-like index, range scans over time get a B-tree, high-write logging gets an LSM-tree. Picking the wrong one is a quiet, compounding performance bug that only shows up once traffic is real.",
+        ],
+        whyItMatters:
+          "This is the mechanism underneath 'why is this endpoint slow' for any data-backed service, credit scoring included. Knowing hash indexes, B-trees, and LSM-trees by name and tradeoff is what turns a vague 'add caching' instinct into a specific, defensible fix.",
+        estimatedHours: 7,
+      },
+      {
+        id: "containers-and-why-orchestrate",
+        name: "What a Container Actually Is, and Why Kubernetes Exists",
+        hook: "A container is not a small virtual machine. It's a regular process with some walls built around it using features the Linux kernel already had.",
+        body: [
+          "Before containers, deploying 2 applications on the same machine meant either running them both directly (and hoping their dependencies never conflicted) or giving each one a full virtual machine (a complete simulated computer, kernel included, which is heavy and slow to start). A container is a middle path: it's an ordinary process running on the host's real kernel, but wrapped with kernel features (namespaces, which make the process think it has its own filesystem, network, and process list; cgroups, which cap how much CPU and memory it's allowed to use) so it behaves as if it's isolated, without the cost of simulating an entire computer. Starting a container takes milliseconds, not the seconds or minutes a VM boot takes, because there's no second kernel to boot.",
+          "1 container solves packaging (a model and its exact runtime shipped together, module 4's whole pitch) and light isolation (1 noisy process can't starve another for CPU past its cgroup limit). It does not solve: what happens when a container crashes and needs restarting, how do 2 containers on different physical machines find each other, how do you roll out a new version of a service to 50 running copies without downtime, and how do you decide which of your 20 physical machines has room to run the next container. Those are cluster-level problems, and they're exactly what Kubernetes was built to solve.",
+          "Kubernetes organizes a cluster into 2 kinds of machines. A small number of machines run the control plane: kube-apiserver (the front door, a REST API every other component and every human talks to), etcd (a distributed key-value store holding the cluster's entire desired state, this is a real database, and everything in the previous 2 concepts about ACID and indexing applies to it directly), kube-scheduler (decides which physical machine a new container should run on, based on available CPU and memory), and kube-controller-manager (runs a set of control loops that constantly compare what etcd says should be running against what's actually running, and issues corrections). The rest of the machines are nodes, and each one runs a kubelet (the local agent that receives instructions and actually starts or stops containers via a container runtime like containerd) and kube-proxy (handles the local networking rules so traffic reaches the right container).",
+          "The single idea underneath all of it is declarative, reconciled state. You don't tell Kubernetes 'start 3 containers.' You tell etcd 'the desired state is 3 replicas of this container,' and a control loop in the controller manager continuously checks whether reality matches that, starting new ones if a node dies, stopping extras if you scale down. This is why Kubernetes can recover from a node failure with no human intervention: the reconciliation loop that fixes a typo in a config is the exact same loop that fixes a dead machine. It's 1 mechanism, not 2.",
+        ],
+        whyItMatters:
+          "Module 5's control-plane deep dive assumes you already have this mental model solid. Without it, 'the scheduler assigns the pod and the kubelet starts it' is 5 words to memorize. With it, it's a mechanism you could rebuild the shape of on a whiteboard.",
+        estimatedHours: 9,
+      },
+      {
+        id: "k8s-objects-bottom-up",
+        name: "Pods, ReplicaSets, Deployments: Building Up, Not Memorizing Down",
+        hook: "Don't memorize 'a Deployment manages a ReplicaSet which manages Pods.' Understand why each layer had to exist because the layer below it wasn't enough on its own.",
+        body: [
+          "Start at the smallest unit. A Pod is 1 or more containers that always get scheduled together, on the same machine, sharing the same network address and storage. Almost always it's just 1 container, and the reason Kubernetes wraps even a single container in this extra concept is to leave room for the rare case where 2 containers genuinely need to live and die together (a main application container plus a small helper that, say, syncs files into a shared volume). You are not meant to create Pods directly in anything resembling production, and understanding why is the next layer.",
+          "A Pod, on its own, is fragile: if the node it's running on dies, that Pod is just gone, nothing brings it back. A ReplicaSet fixes exactly 1 problem: it watches a set of Pods matching a label and continuously ensures a specific number of them are running, creating new ones if the count drops. That's it, that's the entire job. It solves 'keep N copies running' and nothing else, no rollout strategy, no history, no rollback.",
+          "A ReplicaSet alone is still not enough, because updating the application (a new model version, a new image) with a bare ReplicaSet means manually creating a second ReplicaSet and manually shifting traffic, tracking that migration by hand. A Deployment is the layer that adds exactly that missing piece: it manages ReplicaSets on your behalf, and when you change the image tag in a Deployment's spec, it creates a new ReplicaSet, gradually scales it up while scaling the old one down (a rolling update), keeps a history of previous ReplicaSets so a bad rollout can be undone with 1 command, and exposes that whole process as a single object you interact with. This is why Deployments, not bare Pods or bare ReplicaSets, are what you actually create and edit day to day.",
+          "1 more object matters immediately: a Service. Pods are disposable, and every time a ReplicaSet replaces one, it gets a new internal IP address. Nothing that depends on that Pod can hardcode its address. A Service is a stable name and IP that sits in front of a group of Pods (selected by label, the same mechanism a ReplicaSet uses) and load-balances traffic across whichever Pods currently match, so a scoring API's callers only ever need to know the Service's address, never any individual Pod's.",
+          "Line these 4 up and the shape becomes obvious: Pod solves 'run this container.' ReplicaSet solves 'keep N of them running.' Deployment solves 'change what's running, safely, with history.' Service solves 'let other things find them without caring which specific one answers.' Each layer exists because the one below it left exactly 1 problem unsolved. That's the pattern to hold onto, not the object names in isolation.",
+        ],
+        whyItMatters:
+          "This bottom-up shape is what makes 'autoscale the scoring endpoint' (module 5) legible instead of magical: autoscaling is just another controller adjusting the replica count a Deployment already knows how to act on.",
+        estimatedHours: 6,
+      },
+      {
+        id: "batch-and-stream-first-principles",
+        name: "Batch and Stream Processing, From First Principles",
+        hook: "A batch job and a stream job are the same idea (consume input, produce output) with 1 difference: whether the input has an end.",
+        body: [
+          "Set aside credit scoring for a second and think about the oldest form of data processing there is. Before programmable computers, punch-card tabulating machines processed entire batches of cards to compute a census total. The idea survived unchanged into modern computing as batch processing: take a bounded, finite set of input data, run a job over all of it, produce output data. A batch job knows when it's done because the input has a last row. This is why classic batch tools (the Unix pipeline of grep, sort, uniq, awk chained together to summarize a log file, or its distributed descendant, MapReduce) are built around reading a complete input before finishing: the very last row of the input might need to be the very first row of a sorted output, so you can't start emitting output until you've seen everything.",
+          "Stream processing exists because a lot of real data doesn't have a natural end. Users keep applying for loans, transactions keep happening, and 'wait until the input is complete' is meaningless for data that's still arriving. A stream processor doesn't wait: it processes each event shortly after it happens, trading the batch job's simplicity (see everything, then decide) for lower latency (react to 1 thing at a time). An event, in this world, is a small, immutable record of something that happened at a point in time, generated once by a producer, and delivered to 1 or more consumers.",
+          "The mechanism that makes this reliable at scale is worth understanding by name: a message broker. The naive approach (a producer writes to a shared datastore, consumers poll it on a timer) works, but polling gets expensive fast, since most polls find nothing new, and the overhead only grows as you poll more often to reduce delay. A message broker inverts this: producers push events to it, it holds them (in memory, or durably on disk depending on configuration), and consumers get notified as events arrive instead of asking repeatedly. This is what Kafka, Pub/Sub, and similar systems actually are underneath the marketing: a durable, ordered, publish/subscribe log that decouples 'something happened' from 'something acted on it.'",
+          "2 design questions define every messaging system, and they're worth asking explicitly about any streaming architecture you're handed. First: what happens if producers outrun consumers? The system can drop events, buffer them in a growing queue, or push back on the producer (backpressure). Second: what happens if a consumer crashes mid-read? Losing that in-flight event might be fine for a sensor reading (another one arrives in a second) and might be unacceptable for a financial transaction (that one event was the only record it happened). The right answer to both questions depends entirely on what's flowing through the pipe, and 'we used Kafka' answers neither question by itself.",
+          "This is the exact foundation module 3's batch-vs-streaming-features concept was already leaning on without spelling out: application-time features are naturally the batch case (bounded, arrives once, no ongoing stream needed), and behavioral features are naturally the stream case (unbounded, arrives continuously, staleness has a real cost). A system that claims to handle both needs an actual answer to the 2 design questions above, not just 2 different code paths that happen to write to the same feature store.",
+        ],
+        whyItMatters:
+          "Every later mention of 'streaming' in this curriculum rests on this. Without the batch/stream distinction as a mechanism, not a buzzword pair, it's easy to build a system that's really just batch with a shorter interval, and call it streaming by mistake.",
+        estimatedHours: 7,
+        figure: {
+          src: "/figures/realtime-serving.jpeg",
+          caption: "A pseudo-real-time serving architecture, from Wilson, Machine Learning Engineering in Action (Manning).",
+        },
+      },
+      {
+        id: "replication-and-partitioning",
+        name: "Replication and Partitioning: Why 1 Database Isn't Enough at Scale",
+        hook: "1 database server has 2 limits: how much data fits on 1 disk, and what happens when that 1 machine dies. Every distributed data system exists to push past both.",
+        body: [
+          "2 separate problems get solved by spreading data across more than 1 machine, and it's worth keeping them apart because the techniques for each are different. Replication means keeping a full copy of the same data on multiple machines, and it solves availability: if 1 machine dies, another already has everything and can take over. Partitioning (also called sharding) means splitting the data itself into pieces spread across multiple machines, and it solves scale: no single machine needs to hold the entire dataset or answer every query alone.",
+          "The most common replication pattern is leader-follower: 1 node (the leader) accepts all writes, and copies that write to 1 or more follower nodes, which serve read traffic. Synchronous replication waits for a follower to confirm before telling the client the write succeeded (safer, slower). Asynchronous replication tells the client success immediately and lets followers catch up in the background (faster, but a follower can be seconds behind, which is exactly why a user who just submitted a loan application might refresh the page and briefly see stale data if their read gets routed to a lagging follower). Naming that lag and its consequence out loud in a design discussion is a genuinely senior move.",
+          "Partitioning has its own core decision: how do you decide which machine holds which row? Partitioning by key range (all documents from company A on 1 machine, company B on another) keeps range queries fast but risks a hot spot if 1 range gets disproportionate traffic. Partitioning by hash of the key spreads load evenly, since a good hash function scatters similar keys to unrelated machines, but it destroys the ability to do an efficient range scan, since consecutive keys are now on unrelated machines by design. This is the exact same tradeoff hash indexes versus B-trees make inside a single machine, just applied at cluster scale, which is a satisfying thing to notice once you see it.",
+          "None of this is academic for a feature store or a model registry that has genuinely outgrown 1 machine. A feature store serving real-time lookups for millions of active borrowers needs partitioning to spread that load, and needs replication so a single node failure doesn't take the scoring path down with it. The reason 'just use a bigger database' stops working past a certain scale isn't a tooling limitation, it's that a single machine has a hard ceiling on both storage and reliability that no amount of better hardware fully removes.",
+        ],
+        whyItMatters:
+          "This is the mechanism-level answer to 'how would this scale to millions of requests,' a question almost guaranteed to show up in any system-design portion of an interview. Naming replication and partitioning as 2 separate concerns, each with its own real tradeoff, beats a vague 'we'd use a distributed database' every time.",
+        estimatedHours: 8,
+      },
+    ],
+  },
+  {
     id: "foundations",
     name: "Foundations You Can't Skip",
-    order: 1,
+    order: 2,
     intro:
       "Before Kubernetes, before monitoring dashboards, before any of the interesting stuff: can you write Python that a team can trust in production, and do you actually understand the ML lifecycle end to end?",
     concepts: [
@@ -64,7 +164,7 @@ export const modules: Module[] = [
   {
     id: "data-features",
     name: "Data & Features for Credit Risk",
-    order: 2,
+    order: 3,
     intro:
       "A credit model is only as good as the features it sees at decision time, and those features come from 2 very different places: what the applicant just told you, and what your systems already know about them.",
     concepts: [
@@ -115,7 +215,7 @@ export const modules: Module[] = [
   {
     id: "deployment",
     name: "Model Deployment & Serving",
-    order: 3,
+    order: 4,
     intro:
       "Getting a model from a notebook to a live endpoint that a real applicant hits is where 'data science' ends and 'production engineering' begins.",
     concepts: [
@@ -165,7 +265,7 @@ export const modules: Module[] = [
   {
     id: "kubernetes-platform",
     name: "Kubernetes & ML Platform",
-    order: 4,
+    order: 5,
     intro:
       "Kubernetes shows up explicitly in most MLOps postings, and interview loops for adjacent infra roles are known to ask about the control plane's working process in real depth. Don't walk in with the shallow answer.",
     concepts: [
@@ -214,7 +314,7 @@ export const modules: Module[] = [
   {
     id: "experimentation",
     name: "Experimentation for Credit Decisions",
-    order: 5,
+    order: 6,
     intro:
       "Standard A/B testing assumes you can randomize freely and look at the result later. Credit decisions break that assumption in ways that matter.",
     concepts: [
@@ -259,7 +359,7 @@ export const modules: Module[] = [
   {
     id: "monitoring-reliability",
     name: "Monitoring, Fairness & Incident Response",
-    order: 6,
+    order: 7,
     intro:
       "This is usually the module a lending MLOps role cares about most: diagnosing skew, and being on call when a live credit model misbehaves.",
     concepts: [
@@ -295,7 +395,7 @@ export const modules: Module[] = [
         body: [
           "A scoring endpoint needs latency (p50/p95/p99, not just average), throughput, error rate, and the shape of its own output (approval rate, score distribution) all logged and dashboarded. That last one is easy to skip and it's the one that catches business-logic failures a plain uptime check will miss entirely: a service can return 200 OK on every request while its approval rate has quietly dropped to zero because of a broken feature join.",
           "Alert thresholds need enough headroom to not page someone for normal daily and weekly traffic patterns (loan applications spike on paydays, for instance), while still catching a real anomaly fast. That balance is usually earned by looking at a few weeks of real traffic before setting the threshold, not by guessing on day one.",
-          "A common gap worth naming directly: a Prometheus and Grafana stack (with Loki for logs, Tempo for traces) covers latency, error rate, and uptime very well out of the box, and it's genuinely the right operational baseline. But none of that tells you the model's input distribution has drifted. Operational observability and skew observability are two different dashboards, built from two different data sources (request metrics versus feature-value snapshots), and a team that only builds the first one will still get blindsided by the second failure mode.",
+          "A common gap worth naming directly: a Prometheus and Grafana stack (with Loki for logs, Tempo for traces) covers latency, error rate, and uptime very well out of the box, and it's genuinely the right operational baseline. But none of that tells you the model's input distribution has drifted. Operational observability and skew observability are 2 different dashboards, built from 2 different data sources (request metrics versus feature-value snapshots), and a team that only builds the first one will still get blindsided by the second failure mode.",
         ],
         whyItMatters:
           "This is the instrumentation layer that makes the skew-diagnosis and incident-response concepts in this module actually possible in practice.",
@@ -318,7 +418,7 @@ export const modules: Module[] = [
   {
     id: "problem-solving-playbook",
     name: "The Problem-Solving Playbook",
-    order: 7,
+    order: 8,
     intro:
       "This is the meta-skill underneath every module above, and it's usually how these interviews are actually structured: a vague prompt, and you're watched for how you turn it into a plan.",
     concepts: [
