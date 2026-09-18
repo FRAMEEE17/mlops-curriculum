@@ -22,7 +22,7 @@ export default async function ModulePage({
           ← all modules
         </Link>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          {String(mod.order).padStart(2, "0")} — {mod.name}
+          {String(mod.order).padStart(2, "0")} · {mod.name}
         </h1>
         <p className="mt-3 text-[15px] leading-7 text-[var(--text-muted)]">
           {mod.intro}

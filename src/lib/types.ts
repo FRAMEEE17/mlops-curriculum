@@ -1,3 +1,8 @@
+export type Figure = {
+  src: string;
+  caption: string;
+};
+
 export type Concept = {
   id: string;
   name: string;
@@ -5,6 +10,7 @@ export type Concept = {
   body: string[];
   whyItMatters: string;
   estimatedHours: number;
+  figure?: Figure;
 };
 
 export type Module = {

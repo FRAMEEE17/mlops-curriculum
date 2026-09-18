@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { modules } from "@/data/curriculum";
@@ -46,6 +47,23 @@ export default async function ConceptPage({
           </p>
         ))}
       </div>
+
+      {concept.figure ? (
+        <figure className="space-y-2">
+          <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-raised)]">
+            <Image
+              src={concept.figure.src}
+              alt={concept.figure.caption}
+              width={1200}
+              height={800}
+              className="h-auto w-full"
+            />
+          </div>
+          <figcaption className="text-xs text-[var(--text-muted)]">
+            {concept.figure.caption}
+          </figcaption>
+        </figure>
+      ) : null}
 
       <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-raised)] p-5">
         <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">

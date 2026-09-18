@@ -3,9 +3,9 @@ import type { Module } from "@/lib/types";
 export const curriculumName = "MLOps Engineer, Credit & Lending Track";
 
 export const curriculumIntro = [
-  "This is a study plan for an MLOps role at a digital lending or credit card fintech, the kind of place processing loan applications for people who don't have a long credit history. Think Jakarta, Indonesia, high volume, low latency, real money on the line every time a model says yes or no.",
-  "The JD reads like a normal MLOps posting: Kubernetes, CI/CD, monitoring, Python, GCP. But lending is not a normal ML domain. A recommender that's 2% off just shows a slightly worse product. A credit model that's 2% off either lends money to someone who won't pay it back, or denies someone who would have. Both directions cost real money and, in a regulated market, real legal exposure.",
-  "Seven modules. The first three are foundations any MLOps role needs. The next three are what changes when the model decides who gets a loan. The last one is a meta-skill: how to take a vague case-study prompt and turn it into a plan in the room, because that's literally how these interviews are run.",
+  "This is a personal study plan for an MLOps role at a digital lending or credit card fintech, the kind of place processing loan applications for people who don't have a long credit history. High volume, low latency, real money on the line every time a model says yes or no.",
+  "A posting like this reads like a normal MLOps role at first glance: Kubernetes, CI/CD, monitoring, Python, a cloud data warehouse. But lending is not a normal ML domain. A recommender that's 2% off just shows a slightly worse product. A credit model that's 2% off either lends money to someone who won't pay it back, or denies someone who would have. Both directions cost real money and, in a regulated market, real legal exposure.",
+  "Seven modules. The first three are foundations any MLOps role needs. The next three are what changes when the model decides who gets a loan. The last one is a meta-skill: how to take a vague case-study prompt and turn it into a plan in the room, because that's usually how these interviews are run.",
 ];
 
 export const modules: Module[] = [
@@ -16,12 +16,12 @@ export const modules: Module[] = [
     intro:
       "Before Kubernetes, before monitoring dashboards, before any of the interesting stuff: can you write Python that a team can trust in production, and do you actually understand the ML lifecycle end to end?",
     concepts: [
-        {
+      {
         id: "python-engineering",
         name: "Typed, Tested, Packaged Python",
-        hook: "The JD names Pydantic, Poetry, and type checkers by name. That's not filler.",
+        hook: "A role that names Pydantic, Poetry, and type checkers by name isn't asking for filler skills.",
         body: [
-          "Here's the thing about a JD that names specific tools instead of just saying 'strong Python skills': it means someone got burned. Probably by a service that took whatever JSON showed up on the wire, no validation, and a bad payload took down a scoring endpoint at 2am. Pydantic models at every service boundary turn that into a 400 error instead of a stack trace three functions deep.",
+          "When a posting names specific tools instead of just saying 'strong Python skills,' it usually means someone got burned. Probably by a service that took whatever JSON showed up on the wire, no validation, and a bad payload took down a scoring endpoint at 2am. Pydantic models at every service boundary turn that into a 400 error instead of a stack trace three functions deep.",
           "Poetry and a lockfile solve a boring but real problem: your laptop's `numpy` version silently differs from the container's, a model that scored fine locally behaves differently in prod, and you spend a day debugging a phantom. Type checkers (mypy or pyright) in CI catch the class of bug where you pass a `float` where the code expected a `Decimal` for a loan amount, which, in a finance context, is not a bug you want to find with a `git blame` after money moved.",
           "None of this is glamorous. It's also the difference between an engineer who ships once and moves on, and one who's still trusted with the credit-decision service six months later.",
         ],
@@ -34,13 +34,17 @@ export const modules: Module[] = [
         name: "The Loop: Train, Validate, Deploy, Monitor, Retrain",
         hook: "Most people can draw this loop. Fewer can say where it actually breaks.",
         body: [
-          "The standard ML lifecycle diagram is a circle: data in, model trained, model validated, model deployed, model monitored, and eventually retrained on fresh data. Everyone's seen this diagram. The interesting part is naming exactly where it breaks in a real lending pipeline, because that's what a hiring manager is actually testing when they hand you a case study.",
-          "It breaks at the validate-to-deploy handoff, most often: a model validated on last quarter's data looks great, but the applicant population has shifted, say more first-time borrowers with thin credit files applying through a new channel, and the model's calibration silently degrades. It breaks at monitor-to-retrain too: nobody set a clear trigger for 'retrain now,' so a model quietly serves stale decisions for months because the metric that would have caught it wasn't being watched.",
+          "The standard ML lifecycle diagram is a circle: data in, model trained, model validated, model deployed, model monitored, and eventually retrained on fresh data. Everyone's seen this diagram. The interesting part is naming exactly where it breaks in a real lending pipeline, because that's usually what a hiring manager is actually testing with a case study.",
+          "It breaks at the validate-to-deploy handoff most often: a model validated on last quarter's data looks great, but the applicant population has shifted, say more first-time borrowers with thin credit files applying through a new channel, and the model's calibration silently degrades. It breaks at monitor-to-retrain too: nobody set a clear trigger for 'retrain now,' so a model quietly serves stale decisions for months because the metric that would have caught it wasn't being watched.",
           "Knowing the loop's name is table stakes. Being able to point at the two or three places it actually fails in production, and what you'd instrument to catch each one, is the part that separates a junior answer from a senior one.",
         ],
         whyItMatters:
           "Every deeper module in this curriculum is really just 'this one step of the loop, in detail.' Get the loop straight first.",
         estimatedHours: 4,
+        figure: {
+          src: "/figures/ml-lifecycle.jpeg",
+          caption: "The ML lifecycle loop, from Chen et al., Reliable Machine Learning (O'Reilly).",
+        },
       },
       {
         id: "stats-for-eval",
@@ -52,7 +56,7 @@ export const modules: Module[] = [
           "Walk into an interview able to say which metric you'd optimize for and why, tied to the actual business cost of each error type, not just recite the definitions.",
         ],
         whyItMatters:
-          "This is almost certainly in the technical round. 'Feature engineering task, Python problem, a few SQL questions' per the Glassdoor review — eval metrics on imbalanced data is the classic SQL-or-Python bridge question.",
+          "This kind of question is a natural bridge between a Python round and a SQL round: pick a metric, justify it with a query. Eval metrics on imbalanced data show up constantly in credit risk technical screens.",
         estimatedHours: 5,
       },
     ],
@@ -74,8 +78,12 @@ export const modules: Module[] = [
           "The fix isn't clever code, it's process: one feature definition, computed by one pipeline, that both training and serving read from. That's the entire pitch for a feature store.",
         ],
         whyItMatters:
-          "This directly maps to the JD's 'leveraging both streaming and batch processing.' In lending specifically, the stream is what tells you about existing customers; the batch job is what trains the next model on everyone.",
+          "Roles that mention both streaming and batch processing usually mean exactly this split. In lending, the stream is what tells you about existing customers; the batch job is what trains the next model on everyone.",
         estimatedHours: 6,
+        figure: {
+          src: "/figures/batch-serving.jpeg",
+          caption: "A basic batch-prediction-serving architecture, from Wilson, Machine Learning Engineering in Action (Manning).",
+        },
       },
       {
         id: "feature-store",
@@ -83,7 +91,7 @@ export const modules: Module[] = [
         hook: "The feature store's whole job is to make training/serving skew structurally impossible, not just monitored.",
         body: [
           "A feature store is unglamorous infrastructure: a registry of named, versioned feature definitions, computed once, and read by both the offline training job and the online serving path. The value isn't the tool, it's the constraint it enforces: nobody can write ad hoc feature logic in a notebook that quietly diverges from what production actually computes.",
-          "In a lending context this matters more than most domains because features touch regulated data: income, employment, sometimes alternative data like telco or device signals for applicants with no formal credit bureau file (common for first-time borrowers in Indonesia's SLIK system). A single, auditable feature definition is also what lets you answer a regulator's question of 'what exactly did the model see when it denied this application,' months later, precisely.",
+          "In a lending context this matters more than most domains because features touch regulated data: income, employment, sometimes alternative data like telco or device signals for applicants with no formal credit bureau file (common for first-time borrowers in markets with a young credit bureau system). A single, auditable feature definition is also what lets you answer a regulator's question of 'what exactly did the model see when it denied this application,' months later, precisely.",
         ],
         whyItMatters:
           "It's the concrete answer to 'how do you prevent training/serving skew' before it happens, instead of just detecting it after (that's module 6).",
@@ -95,10 +103,10 @@ export const modules: Module[] = [
         hook: "One deployed model version should point to exactly one training snapshot. No exceptions.",
         body: [
           "The requirement here is traceability: given a specific prediction served last Tuesday, you should be able to name the exact model artifact, the exact feature values, and the exact training data snapshot that produced it. Not 'approximately which model,' exactly which one, with a hash.",
-          "This isn't a nice-to-have for a lending product. When a regulator or an internal audit asks why a specific applicant was denied, 'we're not sure which model version was live that day' is not an acceptable answer. A model registry (MLflow, Vertex AI Model Registry, or a homegrown equivalent) tied to a data-versioning tool (DVC or a warehouse snapshot ID) is what makes that answer possible instead of a guess.",
+          "This isn't a nice-to-have for a lending product. When a regulator or an internal audit asks why a specific applicant was denied, 'we're not sure which model version was live that day' is not an acceptable answer. A model registry (MLflow, a cloud provider's model registry, or a homegrown equivalent) tied to a data-versioning tool (DVC or a warehouse snapshot ID) is what makes that answer possible instead of a guess.",
         ],
         whyItMatters:
-          "Directly named in the JD: 'implement and support data pipelines and model versioning policies.' In lending, versioning is a compliance requirement wearing an engineering hat.",
+          "Model and data versioning policy is a named responsibility in most MLOps roles at a regulated fintech. In lending, versioning is a compliance requirement wearing an engineering hat.",
         estimatedHours: 4,
       },
     ],
@@ -119,8 +127,12 @@ export const modules: Module[] = [
           "The real reason to separate them isn't image size, it's blast radius. A training-only dependency with a security patch, or a version bump that changes some numerical behavior, should never be able to break the live scoring endpoint, because the live endpoint never depended on it in the first place.",
         ],
         whyItMatters:
-          "This is the baseline for 'you'll manage the deployment and operation of models' from the JD.",
+          "This is the baseline skill behind 'manage the deployment and operation of models,' a phrase in almost every MLOps posting.",
         estimatedHours: 5,
+        figure: {
+          src: "/figures/offline-serving.jpeg",
+          caption: "Offline model serving via a data store, from Chen et al., Reliable Machine Learning (O'Reilly).",
+        },
       },
       {
         id: "cicd-for-ml",
@@ -131,7 +143,7 @@ export const modules: Module[] = [
           "The failure this prevents: someone retrains on a data pull that accidentally includes a leaked target column, the offline accuracy number looks incredible, and it ships straight to production because nobody manually re-checked. An automated gate catches what a rushed human reviewer under deadline pressure won't.",
         ],
         whyItMatters:
-          "Straight from the JD: 'automate the entire ML lifecycle, from training to deployment.' The gate is the part people skip when building this the first time; don't skip it.",
+          "Automating the ML lifecycle end to end, training through deployment, is close to the core definition of the role. The gate is the part people skip when building this the first time; don't skip it.",
         estimatedHours: 6,
       },
       {
@@ -153,7 +165,7 @@ export const modules: Module[] = [
     name: "Kubernetes & ML Platform",
     order: 4,
     intro:
-      "The JD says Kubernetes explicitly, and Glassdoor reviews for adjacent roles mention a question about 'the control plane working process, but deep dive.' Don't walk in with the shallow answer.",
+      "Kubernetes shows up explicitly in most MLOps postings, and interview loops for adjacent infra roles are known to ask about the control plane's working process in real depth. Don't walk in with the shallow answer.",
     concepts: [
       {
         id: "k8s-control-plane-deep",
@@ -164,7 +176,7 @@ export const modules: Module[] = [
           "The controller manager is running a set of reconciliation loops the whole time, constantly comparing desired state (in etcd) to observed state (from the kubelet's reports) and issuing corrections. That's the part that matters for on-call: if a node dies, the kubelet stops reporting, the node controller marks it not-ready after a timeout, and the replica-set controller notices the pod count is short and schedules a replacement, all without a human doing anything. Being able to trace that whole path, not just name the components, is what 'deep dive' means.",
         ],
         whyItMatters:
-          "Named directly in a Glassdoor review for a DevOps interview at this kind of company: 'About k8s cluster control plane working process but deep dive.' This is close to a guaranteed question.",
+          "Control-plane depth is a recurring theme in infra interviews at this kind of company. Knowing the path end to end, not just the component names, is what separates a pass from a follow-up question you can't answer.",
         estimatedHours: 10,
       },
       {
@@ -176,19 +188,23 @@ export const modules: Module[] = [
           "The practical fix is a mix: scale on a custom metric closer to the actual signal (request queue depth or p99 latency, not raw CPU), keep a minimum replica floor sized for baseline traffic so you're never scaling from zero, and separate resource requests from limits carefully so the scheduler can pack pods efficiently without one noisy neighbor starving the scoring service of CPU during a spike.",
         ],
         whyItMatters:
-          "This is where 'Kubernetes' in the JD stops being a buzzword and becomes an actual latency-budget engineering problem specific to point-of-sale lending.",
+          "This is where Kubernetes stops being a buzzword on a resume and becomes an actual latency-budget engineering problem specific to point-of-sale lending.",
         estimatedHours: 6,
+        figure: {
+          src: "/figures/realtime-serving.jpeg",
+          caption: "A pseudo-real-time serving architecture, from Wilson, Machine Learning Engineering in Action (Manning).",
+        },
       },
       {
         id: "internal-ml-platform",
         name: "The Platform's Job Is to Delete Toil, Not Add Features",
         hook: "Judge a platform by how much of a data scientist's week it gives back, not by how sophisticated it looks.",
         body: [
-          "'Design and support an internal ML platform to increase data science team velocity' is a specific ask: build the paved road. A data scientist should be able to go from a validated model to a production endpoint with a templated deploy config, a standard monitoring dashboard that comes for free, and a feature-store integration that doesn't require them to understand Kubernetes at all. If they need to file a ticket with the platform team for a routine deploy, the platform has failed at its one job.",
+          "Designing an internal ML platform to increase data science team velocity is a specific ask: build the paved road. A data scientist should be able to go from a validated model to a production endpoint with a templated deploy config, a standard monitoring dashboard that comes for free, and a feature-store integration that doesn't require them to understand Kubernetes at all. If they need to file a ticket with the platform team for a routine deploy, the platform has failed at its one job.",
           "The honest way to evaluate this work isn't 'how many features does the platform have,' it's 'how much did median time-to-production drop for a new model,' measured before and after. That's the metric to bring up if asked how you'd know the platform work is actually succeeding.",
         ],
         whyItMatters:
-          "This is a named responsibility in the JD, and it's the difference between an MLOps engineer who ships one pipeline and one who multiplies an entire team's output.",
+          "Platform work is a named responsibility in most senior MLOps roles, and it's the difference between an engineer who ships one pipeline and one who multiplies an entire team's output.",
         estimatedHours: 6,
       },
     ],
@@ -206,10 +222,10 @@ export const modules: Module[] = [
         hook: "You don't route 50% of applicants to an untested model. You earn traffic in stages.",
         body: [
           "Champion/challenger is the credit-industry name for a specific discipline: a new model (the challenger) doesn't get equal traffic with the incumbent (the champion) from day one. It starts on a small, capped, carefully monitored slice, and only earns a larger share as it proves itself against guardrail metrics over real volume, with a fast, automatic kill switch if those guardrails trip.",
-          "This is the same underlying idea as the progressive-rollout concept from module 3, but the framing matters in an interview: 'champion/challenger' is the term a credit-risk hiring manager (like a case-study round with a credit scoring team lead) will actually use. Say it in their language.",
+          "This is the same underlying idea as the progressive-rollout concept from module 3, but the framing matters in an interview: 'champion/challenger' is the term a credit-risk hiring manager will actually use. Say it in their language.",
         ],
         whyItMatters:
-          "The Glassdoor review for a data scientist role at this kind of company mentions exactly this: a hiring-manager case study on a credit scoring model with a given feature set. This vocabulary is the entry ticket to that conversation.",
+          "Case-study rounds with a credit-risk team lead tend to center on exactly this: given a model and a feature set, how do you actually roll it out. This vocabulary is the entry ticket to that conversation.",
         estimatedHours: 4,
       },
       {
@@ -221,7 +237,7 @@ export const modules: Module[] = [
           "The fix for all three is boring and disciplined: pre-register the primary metric and the guardrails before the test starts, calculate required sample size upfront instead of eyeballing it, and use a sequential or group-sequential design if you need to look early without inflating false positives.",
         ],
         whyItMatters:
-          "This is exactly the kind of 'deep dive technically but important' question the Glassdoor review warns about for the data science interview at this kind of company.",
+          "This is exactly the kind of question that gets flagged as deep and important in technical screens for credit-risk-adjacent data roles.",
         estimatedHours: 6,
       },
       {
@@ -243,7 +259,7 @@ export const modules: Module[] = [
     name: "Monitoring, Fairness & Incident Response",
     order: 6,
     intro:
-      "This is the module the JD spends the most words on: diagnosing skew, and being on call when a live credit model misbehaves.",
+      "This is usually the module a lending MLOps role cares about most: diagnosing skew, and being on call when a live credit model misbehaves.",
     concepts: [
       {
         id: "training-serving-skew-diagnosis",
@@ -254,7 +270,7 @@ export const modules: Module[] = [
           "The practical technique: compare the feature-value distributions between the training set and this week's live traffic, feature by feature. A sudden spike in nulls for one feature usually means an upstream pipeline broke. A gradual population-wide shift across many features usually means the applicant mix genuinely changed. A shift concentrated in the relationship between features and outcomes, with feature distributions themselves stable, points toward real concept drift. Each of these has a different fix, and treating all three as 'retrain the model' wastes a retrain cycle solving the wrong problem.",
         ],
         whyItMatters:
-          "Named directly in the JD: 'help stakeholders diagnose training/serving skew.' This is a core, recurring responsibility, not a one-time setup task.",
+          "Helping stakeholders diagnose training/serving skew is a core, recurring responsibility in this kind of role, not a one-time setup task.",
         estimatedHours: 7,
       },
       {
@@ -262,7 +278,7 @@ export const modules: Module[] = [
         name: "Fairness Monitoring and Explaining a Denial",
         hook: "A model that's accurate and illegal is still illegal.",
         body: [
-          "Lending is regulated. In Indonesia, OJK oversight and fair-lending expectations mean a credit model can't just optimize accuracy, it has to be monitored for disparate impact across protected characteristics (even proxies for them, like postal code correlating with ethnicity or income), and every denial typically needs an explainable reason a human can hand to the applicant.",
+          "Lending is regulated. In most jurisdictions with active fair-lending oversight, a credit model can't just optimize accuracy, it has to be monitored for disparate impact across protected characteristics (even proxies for them, like postal code correlating with ethnicity or income), and every denial typically needs an explainable reason a human can hand to the applicant.",
           "In practice this means two things run alongside every model in production, not as an afterthought: a fairness dashboard tracking approval and default rates sliced by demographic proxy groups, watched with the same seriousness as accuracy metrics, and an explainability layer (SHAP values are the common choice) that can turn 'the model said no' into 'insufficient repayment history relative to requested amount,' a reason a compliance team can actually stand behind.",
         ],
         whyItMatters:
@@ -290,7 +306,7 @@ export const modules: Module[] = [
           "The practiced move for a model-behavior incident, if the platform has it built in (see module 3's shadow/canary work): flip a feature flag to route traffic to the last known-good model version immediately, buying time to actually diagnose root cause without applicants sitting on a broken decision path in the meantime. Write the incident retro the same day, while the timeline's still fresh, and turn it into exactly one durable fix, not a wishlist.",
         ],
         whyItMatters:
-          "Named directly in the JD: 'expect to be on call for incident resolution.' This is the module that turns everything else you've learned into a 3am decision made correctly.",
+          "Being on call for a live credit model is a named expectation in most senior MLOps roles at a lending company. This module turns everything else you've learned into a 3am decision made correctly.",
         estimatedHours: 6,
       },
     ],
@@ -300,7 +316,7 @@ export const modules: Module[] = [
     name: "The Problem-Solving Playbook",
     order: 7,
     intro:
-      "This is the meta-skill underneath every module above, and it's how these interviews are actually structured: a vague prompt, and you're watched for how you turn it into a plan.",
+      "This is the meta-skill underneath every module above, and it's usually how these interviews are actually structured: a vague prompt, and you're watched for how you turn it into a plan.",
     concepts: [
       {
         id: "scope-the-problem",
@@ -311,7 +327,7 @@ export const modules: Module[] = [
           "Getting scope wrong doesn't just cost you interview points, it's the real-world failure mode too: an engineer who builds the technically best model for the wrong objective has built the wrong thing, correctly.",
         ],
         whyItMatters:
-          "This is literally the first thing a hiring manager watches for in a case-study round, per the Glassdoor review describing a 'case study about credit scoring model with a given feature set.'",
+          "This is usually the first thing a hiring manager watches for in a case-study round built around a given feature set and a vague prompt.",
         estimatedHours: 3,
       },
       {
@@ -323,19 +339,19 @@ export const modules: Module[] = [
           "A useful format under interview pressure: state the objective in one sentence, list three to five ordered steps, name the biggest risk in the plan, and name how you'd verify success before declaring done. That structure is fast to produce live and hard to poke holes in.",
         ],
         whyItMatters:
-          "This is the actual skill being tested in a 'live coding session, generally good, well structured' round per the Glassdoor review, not just raw coding speed.",
+          "This is the actual skill being tested in a live coding or systems-design round, not just raw coding speed.",
         estimatedHours: 3,
       },
       {
         id: "communicate-the-plan",
         name: "Say It Like You'd Say It to a Non-Technical Stakeholder",
-        hook: "The JD asks for 'exceptional verbal and written communication skills in English,' explicitly. Take that seriously.",
+        hook: "Clear verbal and written communication is a named requirement in most MLOps roles, not a soft-skill afterthought.",
         body: [
           "The best technical plan, explained in jargon nobody in the room can follow, reads as weaker than a simpler plan explained clearly. Practice compressing each module in this curriculum into a two-sentence explanation a business stakeholder could actually act on: not 'we'll implement a feature store to prevent training-serving skew,' but 'we'll make sure the model sees the exact same customer data live as it did during training, so it doesn't make decisions based on stale information.'",
           "This isn't dumbing anything down, it's the actual senior-engineer skill: knowing which details matter to which audience, and not making a business stakeholder sit through an explanation of etcd to understand why a deploy takes ten minutes.",
         ],
         whyItMatters:
-          "Directly named in the JD's requirements, not a bonus point. And it's the skill that turns 'this person is technically strong' into 'I'd trust this person to represent our work to leadership.'",
+          "This is the skill that turns 'this person is technically strong' into 'I'd trust this person to represent our work to leadership.'",
         estimatedHours: 3,
       },
     ],
