@@ -28,9 +28,6 @@ export default function RootLayout({
           </div>
         </header>
         <main className="mx-auto max-w-3xl px-5 py-10">{children}</main>
-        <footer className="mx-auto max-w-3xl px-5 py-10 text-xs text-[var(--text-muted)]">
-          Written as prep notes for an MLOps interview loop at a credit and lending fintech. Not affiliated with, endorsed by, or reviewed by any employer.
-        </footer>
       </body>
     </html>
   );
