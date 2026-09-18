@@ -1,7 +1,7 @@
 # MLOps Engineer, Credit & Lending Track
 
 Study notes for an MLOps interview loop at a credit card / digital lending
-fintech. Seven modules, twenty write-ups, blog voice instead of textbook
+fintech. 7 modules, 20 write-ups, blog voice instead of textbook
 voice.
 
 Foundations first (typed Python, the ML lifecycle, eval metrics that don't

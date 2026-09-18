@@ -5,7 +5,7 @@ export const curriculumName = "MLOps Engineer, Credit & Lending Track";
 export const curriculumIntro = [
   "This is a personal study plan for an MLOps role at a digital lending or credit card fintech, the kind of place processing loan applications for people who don't have a long credit history. High volume, low latency, real money on the line every time a model says yes or no.",
   "A posting like this reads like a normal MLOps role at first glance: Kubernetes, CI/CD, monitoring, Python, a cloud data warehouse. But lending is not a normal ML domain. A recommender that's 2% off just shows a slightly worse product. A credit model that's 2% off either lends money to someone who won't pay it back, or denies someone who would have. Both directions cost real money and, in a regulated market, real legal exposure.",
-  "Seven modules. The first three are foundations any MLOps role needs. The next three are what changes when the model decides who gets a loan. The last one is a meta-skill: how to take a vague case-study prompt and turn it into a plan in the room, because that's usually how these interviews are run.",
+  "7 modules. The first 3 are foundations any MLOps role needs. The next 3 are what changes when the model decides who gets a loan. The last one is a meta-skill: how to take a vague case-study prompt and turn it into a plan in the room, because that's usually how these interviews are run.",
 ];
 
 export const modules: Module[] = [
@@ -21,9 +21,9 @@ export const modules: Module[] = [
         name: "Typed, Tested, Packaged Python",
         hook: "A role that names Pydantic, Poetry, and type checkers by name isn't asking for filler skills.",
         body: [
-          "When a posting names specific tools instead of just saying 'strong Python skills,' it usually means someone got burned. Probably by a service that took whatever JSON showed up on the wire, no validation, and a bad payload took down a scoring endpoint at 2am. Pydantic models at every service boundary turn that into a 400 error instead of a stack trace three functions deep.",
+          "When a posting names specific tools instead of just saying 'strong Python skills,' it usually means someone got burned. Probably by a service that took whatever JSON showed up on the wire, no validation, and a bad payload took down a scoring endpoint at 2am. Pydantic models at every service boundary turn that into a 400 error instead of a stack trace 3 functions deep.",
           "Poetry and a lockfile solve a boring but real problem: your laptop's `numpy` version silently differs from the container's, a model that scored fine locally behaves differently in prod, and you spend a day debugging a phantom. Type checkers (mypy or pyright) in CI catch the class of bug where you pass a `float` where the code expected a `Decimal` for a loan amount, which, in a finance context, is not a bug you want to find with a `git blame` after money moved.",
-          "None of this is glamorous. It's also the difference between an engineer who ships once and moves on, and one who's still trusted with the credit-decision service six months later.",
+          "None of this is glamorous. It's also the difference between an engineer who ships once and moves on, and one who's still trusted with the credit-decision service 6 months later.",
         ],
         whyItMatters:
           "A credit-decision API is a trust boundary handling other people's money. Validation and types are how you make that boundary loud instead of silent.",
@@ -36,10 +36,10 @@ export const modules: Module[] = [
         body: [
           "The standard ML lifecycle diagram is a circle: data in, model trained, model validated, model deployed, model monitored, and eventually retrained on fresh data. Everyone's seen this diagram. The interesting part is naming exactly where it breaks in a real lending pipeline, because that's usually what a hiring manager is actually testing with a case study.",
           "It breaks at the validate-to-deploy handoff most often: a model validated on last quarter's data looks great, but the applicant population has shifted, say more first-time borrowers with thin credit files applying through a new channel, and the model's calibration silently degrades. It breaks at monitor-to-retrain too: nobody set a clear trigger for 'retrain now,' so a model quietly serves stale decisions for months because the metric that would have caught it wasn't being watched.",
-          "Knowing the loop's name is table stakes. Being able to point at the two or three places it actually fails in production, and what you'd instrument to catch each one, is the part that separates a junior answer from a senior one.",
+          "Knowing the loop's name is table stakes. Being able to point at the 2 or 3 places it actually fails in production, and what you'd instrument to catch each one, is the part that separates a junior answer from a senior one.",
         ],
         whyItMatters:
-          "Every deeper module in this curriculum is really just 'this one step of the loop, in detail.' Get the loop straight first.",
+          "Every deeper module in this curriculum is really just 'this 1 step of the loop, in detail.' Get the loop straight first.",
         estimatedHours: 4,
         figure: {
           src: "/figures/ml-lifecycle.jpeg",
@@ -52,7 +52,7 @@ export const modules: Module[] = [
         hook: "Most loan applicants don't default. That fact alone breaks naive accuracy.",
         body: [
           "If 95% of borrowers repay, a model that predicts 'will repay' for everyone hits 95% accuracy while being completely useless. This isn't a trick question, it's the actual shape of credit data, and it's why precision, recall, and AUC-PR (not ROC-AUC, which is also misleading under heavy imbalance) show up constantly in credit risk work.",
-          "The real skill is picking the right metric for the actual cost structure. A false negative (approving someone who defaults) costs the principal amount. A false positive (rejecting someone who would have repaid) costs the interest you'd have earned, plus, at scale, it's the kind of pattern that draws regulatory attention if it clusters by demographic. Those two errors are not symmetric in cost, so 'maximize accuracy' is close to the wrong objective from the start.",
+          "The real skill is picking the right metric for the actual cost structure. A false negative (approving someone who defaults) costs the principal amount. A false positive (rejecting someone who would have repaid) costs the interest you'd have earned, plus, at scale, it's the kind of pattern that draws regulatory attention if it clusters by demographic. Those 2 errors are not symmetric in cost, so 'maximize accuracy' is close to the wrong objective from the start.",
           "Walk into an interview able to say which metric you'd optimize for and why, tied to the actual business cost of each error type, not just recite the definitions.",
         ],
         whyItMatters:
@@ -66,16 +66,16 @@ export const modules: Module[] = [
     name: "Data & Features for Credit Risk",
     order: 2,
     intro:
-      "A credit model is only as good as the features it sees at decision time, and those features come from two very different places: what the applicant just told you, and what your systems already know about them.",
+      "A credit model is only as good as the features it sees at decision time, and those features come from 2 very different places: what the applicant just told you, and what your systems already know about them.",
     concepts: [
       {
         id: "batch-vs-streaming-features",
         name: "Application-Time vs Behavioral Features",
-        hook: "Two feature paths, two different freshness requirements, one model.",
+        hook: "2 feature paths, 2 different freshness requirements, 1 model.",
         body: [
-          "A credit decision draws on two kinds of features. Application-time features (income, employment, the loan amount requested) arrive once, at the moment someone applies, and can be computed synchronously. Behavioral features (repayment history on prior loans, transaction patterns, days-past-due on other products) are computed continuously from a stream and need to be fresh at read time, not stale by a batch job that ran six hours ago.",
-          "The failure mode to know cold: the same feature, like 'average monthly transaction volume,' computed one way in the offline training pipeline (a nightly batch SQL job) and a different way in the online serving path (a streaming aggregation with a shorter window), produces two different numbers for the same person. The model trained on one distribution scores on another. That's training/serving skew, and it's the single most common production bug in feature pipelines.",
-          "The fix isn't clever code, it's process: one feature definition, computed by one pipeline, that both training and serving read from. That's the entire pitch for a feature store.",
+          "A credit decision draws on 2 kinds of features. Application-time features (income, employment, the loan amount requested) arrive once, at the moment someone applies, and can be computed synchronously. Behavioral features (repayment history on prior loans, transaction patterns, days-past-due on other products) are computed continuously from a stream and need to be fresh at read time, not stale by a batch job that ran 6 hours ago.",
+          "The failure mode to know cold: the same feature, like 'average monthly transaction volume,' computed one way in the offline training pipeline (a nightly batch SQL job) and a different way in the online serving path (a streaming aggregation with a shorter window), produces 2 different numbers for the same person. The model trained on one distribution scores on another. That's training/serving skew, and it's the single most common production bug in feature pipelines.",
+          "The fix isn't clever code, it's process: 1 feature definition, computed by 1 pipeline, that both training and serving read from. That's the entire pitch for a feature store.",
         ],
         whyItMatters:
           "Roles that mention both streaming and batch processing usually mean exactly this split. In lending, the stream is what tells you about existing customers; the batch job is what trains the next model on everyone.",
@@ -87,7 +87,7 @@ export const modules: Module[] = [
       },
       {
         id: "feature-store",
-        name: "One Feature Definition, Not Two",
+        name: "1 Feature Definition, Not 2",
         hook: "The feature store's whole job is to make training/serving skew structurally impossible, not just monitored.",
         body: [
           "A feature store is unglamorous infrastructure: a registry of named, versioned feature definitions, computed once, and read by both the offline training job and the online serving path. The value isn't the tool, it's the constraint it enforces: nobody can write ad hoc feature logic in a notebook that quietly diverges from what production actually computes.",
@@ -100,7 +100,7 @@ export const modules: Module[] = [
       {
         id: "data-model-versioning",
         name: "Version Data, Features, and Model Together",
-        hook: "One deployed model version should point to exactly one training snapshot. No exceptions.",
+        hook: "1 deployed model version should point to exactly 1 training snapshot. No exceptions.",
         body: [
           "The requirement here is traceability: given a specific prediction served last Tuesday, you should be able to name the exact model artifact, the exact feature values, and the exact training data snapshot that produced it. Not 'approximately which model,' exactly which one, with a hash.",
           "This isn't a nice-to-have for a lending product. When a regulator or an internal audit asks why a specific applicant was denied, 'we're not sure which model version was live that day' is not an acceptable answer. A model registry (MLflow, a cloud provider's model registry, or a homegrown equivalent) tied to a data-versioning tool (DVC or a warehouse snapshot ID) is what makes that answer possible instead of a guess.",
@@ -185,7 +185,7 @@ export const modules: Module[] = [
         hook: "A loan applicant waiting at a point-of-sale terminal will not wait for a cold-started pod.",
         body: [
           "Instant credit decisions (buy-now-pay-later at checkout, an in-app loan offer) carry a tight latency SLA, often under a couple hundred milliseconds end to end. A Horizontal Pod Autoscaler reacting to CPU alone is usually too slow and too blunt for this: by the time CPU climbs enough to trigger a scale-up, and the new pod finishes its cold start (loading model weights into memory, warming up any JIT or graph compilation), the traffic spike that caused it has often already passed, and the requests that hit during the gap timed out.",
-          "The practical fix is a mix: scale on a custom metric closer to the actual signal (request queue depth or p99 latency, not raw CPU), keep a minimum replica floor sized for baseline traffic so you're never scaling from zero, and separate resource requests from limits carefully so the scheduler can pack pods efficiently without one noisy neighbor starving the scoring service of CPU during a spike.",
+          "The practical fix is a mix: scale on a custom metric closer to the actual signal (request queue depth or p99 latency, not raw CPU), keep a minimum replica floor sized for baseline traffic so you're never scaling from zero, and separate resource requests from limits carefully so the scheduler can pack pods efficiently without 1 noisy neighbor starving the scoring service of CPU during a spike.",
         ],
         whyItMatters:
           "This is where Kubernetes stops being a buzzword on a resume and becomes an actual latency-budget engineering problem specific to point-of-sale lending.",
@@ -200,11 +200,11 @@ export const modules: Module[] = [
         name: "The Platform's Job Is to Delete Toil, Not Add Features",
         hook: "Judge a platform by how much of a data scientist's week it gives back, not by how sophisticated it looks.",
         body: [
-          "Designing an internal ML platform to increase data science team velocity is a specific ask: build the paved road. A data scientist should be able to go from a validated model to a production endpoint with a templated deploy config, a standard monitoring dashboard that comes for free, and a feature-store integration that doesn't require them to understand Kubernetes at all. If they need to file a ticket with the platform team for a routine deploy, the platform has failed at its one job.",
+          "Designing an internal ML platform to increase data science team velocity is a specific ask: build the paved road. A data scientist should be able to go from a validated model to a production endpoint with a templated deploy config, a standard monitoring dashboard that comes for free, and a feature-store integration that doesn't require them to understand Kubernetes at all. If they need to file a ticket with the platform team for a routine deploy, the platform has failed at its 1 job.",
           "The honest way to evaluate this work isn't 'how many features does the platform have,' it's 'how much did median time-to-production drop for a new model,' measured before and after. That's the metric to bring up if asked how you'd know the platform work is actually succeeding.",
         ],
         whyItMatters:
-          "Platform work is a named responsibility in most senior MLOps roles, and it's the difference between an engineer who ships one pipeline and one who multiplies an entire team's output.",
+          "Platform work is a named responsibility in most senior MLOps roles, and it's the difference between an engineer who ships 1 pipeline and one who multiplies an entire team's output.",
         estimatedHours: 6,
       },
     ],
@@ -221,7 +221,7 @@ export const modules: Module[] = [
         name: "Champion/Challenger, Not a Coin-Flip A/B Test",
         hook: "You don't route 50% of applicants to an untested model. You earn traffic in stages.",
         body: [
-          "Champion/challenger is the credit-industry name for a specific discipline: a new model (the challenger) doesn't get equal traffic with the incumbent (the champion) from day one. It starts on a small, capped, carefully monitored slice, and only earns a larger share as it proves itself against guardrail metrics over real volume, with a fast, automatic kill switch if those guardrails trip.",
+          "Champion/challenger is the credit-industry name for a specific discipline: a new model (the challenger) doesn't get equal traffic with the incumbent (the champion) from day 1. It starts on a small, capped, carefully monitored slice, and only earns a larger share as it proves itself against guardrail metrics over real volume, with a fast, automatic kill switch if those guardrails trip.",
           "This is the same underlying idea as the progressive-rollout concept from module 3, but the framing matters in an interview: 'champion/challenger' is the term a credit-risk hiring manager will actually use. Say it in their language.",
         ],
         whyItMatters:
@@ -233,8 +233,8 @@ export const modules: Module[] = [
         name: "Sample Size, Guardrails, and Why Your Test Might Be Lying",
         hook: "A statistically significant result on a metric you didn't pre-register is usually noise wearing a lab coat.",
         body: [
-          "Three failure modes show up constantly in real experimentation work. Underpowered tests: default rate is a low base-rate event, so detecting a real change in it needs a much larger sample and a much longer window than a click-through-rate test would. Peeking: checking results daily and stopping the moment something looks significant inflates the false-positive rate badly, unless you're using a sequential-testing method built for exactly that. And missing guardrails: optimizing approval rate alone, without a guardrail on default rate or a fairness metric, will happily find a model that approves more people and also defaults more, which is not a win.",
-          "The fix for all three is boring and disciplined: pre-register the primary metric and the guardrails before the test starts, calculate required sample size upfront instead of eyeballing it, and use a sequential or group-sequential design if you need to look early without inflating false positives.",
+          "3 failure modes show up constantly in real experimentation work. Underpowered tests: default rate is a low base-rate event, so detecting a real change in it needs a much larger sample and a much longer window than a click-through-rate test would. Peeking: checking results daily and stopping the moment something looks significant inflates the false-positive rate badly, unless you're using a sequential-testing method built for exactly that. And missing guardrails: optimizing approval rate alone, without a guardrail on default rate or a fairness metric, will happily find a model that approves more people and also defaults more, which is not a win.",
+          "The fix for all 3 is boring and disciplined: pre-register the primary metric and the guardrails before the test starts, calculate required sample size upfront instead of eyeballing it, and use a sequential or group-sequential design if you need to look early without inflating false positives.",
         ],
         whyItMatters:
           "This is exactly the kind of question that gets flagged as deep and important in technical screens for credit-risk-adjacent data roles.",
@@ -246,7 +246,7 @@ export const modules: Module[] = [
         hook: "You can't ethically A/B test 'deny this person a loan just to see what happens.'",
         body: [
           "The uncomfortable structural problem in credit modeling: you only observe repayment outcomes for people you actually approved. You never learn whether a rejected applicant would have repaid, because they never got the loan. That's a selection bias baked into the data itself, not something a better model architecture fixes.",
-          "Off-policy and counterfactual evaluation methods (reject inference, uplift modeling, or a carefully bounded random-acceptance holdout, where a tiny, deliberately random slice of borderline applicants gets approved purely to generate unbiased labels) are how the industry works around this. Knowing this problem exists, by name, and being able to describe one mitigation, is a meaningfully senior answer in a credit-modeling case study.",
+          "Off-policy and counterfactual evaluation methods (reject inference, uplift modeling, or a carefully bounded random-acceptance holdout, where a tiny, deliberately random slice of borderline applicants gets approved purely to generate unbiased labels) are how the industry works around this. Knowing this problem exists, by name, and being able to describe 1 mitigation, is a meaningfully senior answer in a credit-modeling case study.",
         ],
         whyItMatters:
           "This is the kind of nuance that separates a generic MLOps candidate from one who understands the specific domain, and it's a natural follow-up to the champion/challenger question.",
@@ -266,8 +266,8 @@ export const modules: Module[] = [
         name: "Diagnosing Skew Instead of Just Naming It",
         hook: "'Something's wrong with the model' is not a diagnosis. Here's how to actually find it.",
         body: [
-          "When a live model's approval rate or default rate suddenly shifts, the honest first move isn't to suspect the model, it's to rule out three boring causes first: a pipeline bug feeding it malformed or null features, a genuine shift in the applicant population (a new marketing channel bringing in a different demographic), or actual concept drift, where the real relationship between features and repayment has changed (a macroeconomic shift, for instance).",
-          "The practical technique: compare the feature-value distributions between the training set and this week's live traffic, feature by feature. A sudden spike in nulls for one feature usually means an upstream pipeline broke. A gradual population-wide shift across many features usually means the applicant mix genuinely changed. A shift concentrated in the relationship between features and outcomes, with feature distributions themselves stable, points toward real concept drift. Each of these has a different fix, and treating all three as 'retrain the model' wastes a retrain cycle solving the wrong problem.",
+          "When a live model's approval rate or default rate suddenly shifts, the honest first move isn't to suspect the model, it's to rule out 3 boring causes first: a pipeline bug feeding it malformed or null features, a genuine shift in the applicant population (a new marketing channel bringing in a different demographic), or actual concept drift, where the real relationship between features and repayment has changed (a macroeconomic shift, for instance).",
+          "The practical technique: compare the feature-value distributions between the training set and this week's live traffic, feature by feature. A sudden spike in nulls for 1 feature usually means an upstream pipeline broke. A gradual population-wide shift across many features usually means the applicant mix genuinely changed. A shift concentrated in the relationship between features and outcomes, with feature distributions themselves stable, points toward real concept drift. Each of these has a different fix, and treating all 3 as 'retrain the model' wastes a retrain cycle solving the wrong problem.",
         ],
         whyItMatters:
           "Helping stakeholders diagnose training/serving skew is a core, recurring responsibility in this kind of role, not a one-time setup task.",
@@ -279,7 +279,7 @@ export const modules: Module[] = [
         hook: "A model that's accurate and illegal is still illegal.",
         body: [
           "Lending is regulated. In most jurisdictions with active fair-lending oversight, a credit model can't just optimize accuracy, it has to be monitored for disparate impact across protected characteristics (even proxies for them, like postal code correlating with ethnicity or income), and every denial typically needs an explainable reason a human can hand to the applicant.",
-          "In practice this means two things run alongside every model in production, not as an afterthought: a fairness dashboard tracking approval and default rates sliced by demographic proxy groups, watched with the same seriousness as accuracy metrics, and an explainability layer (SHAP values are the common choice) that can turn 'the model said no' into 'insufficient repayment history relative to requested amount,' a reason a compliance team can actually stand behind.",
+          "In practice this means 2 things run alongside every model in production, not as an afterthought: a fairness dashboard tracking approval and default rates sliced by demographic proxy groups, watched with the same seriousness as accuracy metrics, and an explainability layer (SHAP values are the common choice) that can turn 'the model said no' into 'insufficient repayment history relative to requested amount,' a reason a compliance team can actually stand behind.",
         ],
         whyItMatters:
           "This is the single biggest way lending MLOps differs from MLOps anywhere else, and it's very likely to come up in a case-study round with a credit-risk hiring manager.",
@@ -303,7 +303,7 @@ export const modules: Module[] = [
         hook: "The decision isn't 'is this bad,' it's 'roll back, flag off, or ride it out,' inside a few minutes.",
         body: [
           "When a page fires for the scoring service, the triage decision tree is usually: is this an infra problem (pods crash-looping, a downstream dependency down) or a model-behavior problem (approval rate or score distribution moved)? Infra problems usually have a fast, safe fix: roll back the deploy or fail over. Model-behavior problems are scarier because the fix isn't always obvious, and a rollback might just trade one bad model for a different, differently-bad one.",
-          "The practiced move for a model-behavior incident, if the platform has it built in (see module 3's shadow/canary work): flip a feature flag to route traffic to the last known-good model version immediately, buying time to actually diagnose root cause without applicants sitting on a broken decision path in the meantime. Write the incident retro the same day, while the timeline's still fresh, and turn it into exactly one durable fix, not a wishlist.",
+          "The practiced move for a model-behavior incident, if the platform has it built in (see module 3's shadow/canary work): flip a feature flag to route traffic to the last known-good model version immediately, buying time to actually diagnose root cause without applicants sitting on a broken decision path in the meantime. Write the incident retro the same day, while the timeline's still fresh, and turn it into exactly 1 durable fix, not a wishlist.",
         ],
         whyItMatters:
           "Being on call for a live credit model is a named expectation in most senior MLOps roles at a lending company. This module turns everything else you've learned into a 3am decision made correctly.",
@@ -321,9 +321,9 @@ export const modules: Module[] = [
       {
         id: "scope-the-problem",
         name: "Scope Before You Solve",
-        hook: "The candidate who asks three good questions before touching a whiteboard usually beats the one who starts coding immediately.",
+        hook: "The candidate who asks 3 good questions before touching a whiteboard usually beats the one who starts coding immediately.",
         body: [
-          "A case study like 'here's a feature set, build us a credit scoring model' is deliberately underspecified. The first move isn't picking an algorithm, it's scoping: what's the actual business objective (minimize default rate, maximize approval volume, or some explicit tradeoff between the two)? What's the cost asymmetry between a false positive and a false negative? What's the latency requirement, is this a real-time point-of-sale decision or an overnight batch review? What data is actually available at decision time versus what's in the training set but not available live?",
+          "A case study like 'here's a feature set, build us a credit scoring model' is deliberately underspecified. The first move isn't picking an algorithm, it's scoping: what's the actual business objective (minimize default rate, maximize approval volume, or some explicit tradeoff between the 2)? What's the cost asymmetry between a false positive and a false negative? What's the latency requirement, is this a real-time point-of-sale decision or an overnight batch review? What data is actually available at decision time versus what's in the training set but not available live?",
           "Getting scope wrong doesn't just cost you interview points, it's the real-world failure mode too: an engineer who builds the technically best model for the wrong objective has built the wrong thing, correctly.",
         ],
         whyItMatters:
@@ -336,7 +336,7 @@ export const modules: Module[] = [
         hook: "A good plan has dependencies. A list of tasks in no particular order is not a plan.",
         body: [
           "Once the problem is scoped, break it into steps that respect real dependencies: you can't pick an evaluation metric before you know the cost asymmetry, you can't design the rollout before you know the latency requirement, you can't set a fairness threshold before you know what protected attributes and proxies are in scope. State the plan as an ordered sequence, out loud, and name what would change the plan (a different latency requirement changes the whole serving architecture, for instance) so the interviewer can see you understand which decisions are load-bearing and which are details.",
-          "A useful format under interview pressure: state the objective in one sentence, list three to five ordered steps, name the biggest risk in the plan, and name how you'd verify success before declaring done. That structure is fast to produce live and hard to poke holes in.",
+          "A useful format under interview pressure: state the objective in 1 sentence, list 3 to 5 ordered steps, name the biggest risk in the plan, and name how you'd verify success before declaring done. That structure is fast to produce live and hard to poke holes in.",
         ],
         whyItMatters:
           "This is the actual skill being tested in a live coding or systems-design round, not just raw coding speed.",
@@ -347,8 +347,8 @@ export const modules: Module[] = [
         name: "Say It Like You'd Say It to a Non-Technical Stakeholder",
         hook: "Clear verbal and written communication is a named requirement in most MLOps roles, not a soft-skill afterthought.",
         body: [
-          "The best technical plan, explained in jargon nobody in the room can follow, reads as weaker than a simpler plan explained clearly. Practice compressing each module in this curriculum into a two-sentence explanation a business stakeholder could actually act on: not 'we'll implement a feature store to prevent training-serving skew,' but 'we'll make sure the model sees the exact same customer data live as it did during training, so it doesn't make decisions based on stale information.'",
-          "This isn't dumbing anything down, it's the actual senior-engineer skill: knowing which details matter to which audience, and not making a business stakeholder sit through an explanation of etcd to understand why a deploy takes ten minutes.",
+          "The best technical plan, explained in jargon nobody in the room can follow, reads as weaker than a simpler plan explained clearly. Practice compressing each module in this curriculum into a 2-sentence explanation a business stakeholder could actually act on: not 'we'll implement a feature store to prevent training-serving skew,' but 'we'll make sure the model sees the exact same customer data live as it did during training, so it doesn't make decisions based on stale information.'",
+          "This isn't dumbing anything down, it's the actual senior-engineer skill: knowing which details matter to which audience, and not making a business stakeholder sit through an explanation of etcd to understand why a deploy takes 10 minutes.",
         ],
         whyItMatters:
           "This is the skill that turns 'this person is technically strong' into 'I'd trust this person to represent our work to leadership.'",

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { modules } from "@/data/curriculum";
+import { withBasePath } from "@/lib/basePath";
 
 export function generateStaticParams() {
   return modules.flatMap((m) =>
@@ -52,7 +53,7 @@ export default async function ConceptPage({
         <figure className="space-y-2">
           <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-raised)]">
             <Image
-              src={concept.figure.src}
+              src={withBasePath(concept.figure.src)}
               alt={concept.figure.caption}
               width={1200}
               height={800}
