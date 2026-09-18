@@ -10,7 +10,7 @@ export type Concept = {
   body: string[];
   whyItMatters: string;
   estimatedHours: number;
-  figure?: Figure;
+  figures?: Figure[];
 };
 
 export type Module = {

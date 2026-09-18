@@ -60,6 +60,16 @@ export const modules: Module[] = [
         whyItMatters:
           "This is the mechanism underneath 'why is this endpoint slow' for any data-backed service, credit scoring included. Knowing hash indexes, B-trees, and LSM-trees by name and tradeoff is what turns a vague 'add caching' instinct into a specific, defensible fix.",
         estimatedHours: 7,
+        figures: [
+          {
+            src: "/figures/hash-index.jpeg",
+            caption: "A hash index: key to byte offset, pointing into a log-structured file on disk. From Kleppmann, Designing Data-Intensive Applications (O'Reilly).",
+          },
+          {
+            src: "/figures/btree-lookup.jpeg",
+            caption: "Looking up a key by walking down a B-tree, page by page. From Kleppmann, Designing Data-Intensive Applications (O'Reilly).",
+          },
+        ],
       },
       {
         id: "containers-and-why-orchestrate",
@@ -131,10 +141,10 @@ export const modules: Module[] = [
         whyItMatters:
           "Every later mention of 'streaming' in this curriculum rests on this. Understanding how batch and stream processing work helps you spot a batch job running at a shorter interval and mislabeled as streaming.",
         estimatedHours: 7,
-        figure: {
+        figures: [{
           src: "/figures/realtime-serving.jpeg",
           caption: "A pseudo-real-time serving architecture, from Wilson, Machine Learning Engineering in Action (Manning).",
-        },
+        }],
       },
       {
         id: "replication-and-partitioning",
@@ -158,6 +168,12 @@ export const modules: Module[] = [
         whyItMatters:
           "This is the mechanism-level answer to 'how would this scale to millions of requests,' a question almost guaranteed to show up in any system-design portion of an interview. Naming replication and partitioning as 2 separate concerns, each with its own real tradeoff, beats a vague 'we'd use a distributed database' every time.",
         estimatedHours: 8,
+        figures: [
+          {
+            src: "/figures/leader-replication.jpeg",
+            caption: "Leader-based replication with 1 synchronous and 1 asynchronous follower. From Kleppmann, Designing Data-Intensive Applications (O'Reilly).",
+          },
+        ],
       },
     ],
   },
@@ -225,10 +241,10 @@ export const modules: Module[] = [
         whyItMatters:
           "Every later stage in this module inherits whatever this one gets wrong. A model can't be better than the data decisions made here.",
         estimatedHours: 4,
-        figure: {
+        figures: [{
           src: "/figures/ml-lifecycle.jpeg",
           caption: "The ML lifecycle loop, from Chen et al., Reliable Machine Learning (O'Reilly).",
-        },
+        }],
       },
       {
         id: "lifecycle-training-pipelines",
@@ -246,10 +262,10 @@ export const modules: Module[] = [
         whyItMatters:
           "Training pipelines are absolutely a production system, worthy of the same care as a serving binary. Treating them as disposable notebook code is how teams end up with a model nobody can reproduce.",
         estimatedHours: 6,
-        figure: {
+        figures: [{
           src: "/figures/data-quality-survey.jpeg",
           caption: "Survey data on data-quality challenges getting ML into production, from Wilson, Machine Learning Engineering in Action (Manning).",
-        },
+        }],
       },
       {
         id: "lifecycle-build-validate",
@@ -283,10 +299,10 @@ export const modules: Module[] = [
         whyItMatters:
           "SLOs for ML are harder to set than for a normal service because subtle data changes can quietly wreck them. Getting the right people (SRE, product, data science) into that conversation early avoids finding out the hard way.",
         estimatedHours: 6,
-        figure: {
+        figures: [{
           src: "/figures/deployment-cost-tradeoffs.jpeg",
           caption: "Deployment cost tradeoffs across SLA, volume, complexity, and drift, from Wilson, Machine Learning Engineering in Action (Manning).",
-        },
+        }],
       },
       {
         id: "lifecycle-launch-discipline",
@@ -337,10 +353,10 @@ export const modules: Module[] = [
         whyItMatters:
           "An MLOps engineer who understands where a data scientist's responsibility ends and their own begins can design the handoff (a documented schema, a clear eval report, a known rollback path) instead of discovering the gap during an incident.",
         estimatedHours: 6,
-        figure: {
+        figures: [{
           src: "/figures/revenue-attribution-failure.jpeg",
           caption: "A model that cleared every technical bar but had no answer for its business impact, from Wilson, Machine Learning Engineering in Action (Manning).",
-        },
+        }],
       },
     ],
   },
@@ -369,10 +385,10 @@ export const modules: Module[] = [
         whyItMatters:
           "Roles that mention both streaming and batch processing usually mean exactly this split. In lending, the stream is what tells you about existing customers; the batch job is what trains the next model on everyone.",
         estimatedHours: 6,
-        figure: {
+        figures: [{
           src: "/figures/batch-serving.jpeg",
           caption: "A basic batch-prediction-serving architecture, from Wilson, Machine Learning Engineering in Action (Manning).",
-        },
+        }],
       },
       {
         id: "feature-store",
@@ -424,10 +440,10 @@ export const modules: Module[] = [
         whyItMatters:
           "This is the baseline skill behind 'manage the deployment and operation of models,' a phrase in almost every MLOps posting.",
         estimatedHours: 5,
-        figure: {
+        figures: [{
           src: "/figures/offline-serving.jpeg",
           caption: "Offline model serving via a data store, from Chen et al., Reliable Machine Learning (O'Reilly).",
-        },
+        }],
       },
       {
         id: "cicd-for-ml",
@@ -503,10 +519,10 @@ export const modules: Module[] = [
         whyItMatters:
           "Point-of-sale lending requires Kubernetes scaling decisions that fit within the scoring service's latency budget.",
         estimatedHours: 6,
-        figure: {
+        figures: [{
           src: "/figures/realtime-serving.jpeg",
           caption: "A pseudo-real-time serving architecture, from Wilson, Machine Learning Engineering in Action (Manning).",
-        },
+        }],
       },
       {
         id: "internal-ml-platform",
@@ -636,6 +652,12 @@ export const modules: Module[] = [
         whyItMatters:
           "This is the instrumentation layer that makes the skew-diagnosis and incident-response concepts in this module possible.",
         estimatedHours: 5,
+        figures: [
+          {
+            src: "/figures/grafana-k8s-nodes.jpeg",
+            caption: "A real Grafana dashboard backed by Prometheus, node CPU, load, and usage per core, from Kubernetes for Full-Stack Developers (DigitalOcean).",
+          },
+        ],
       },
       {
         id: "on-call-incident-response",

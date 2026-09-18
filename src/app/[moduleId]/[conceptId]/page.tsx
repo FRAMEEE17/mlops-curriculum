@@ -52,21 +52,25 @@ export default async function ConceptPage({
         ))}
       </ul>
 
-      {concept.figure ? (
-        <figure className="space-y-2">
-          <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-raised)]">
-            <Image
-              src={withBasePath(concept.figure.src)}
-              alt={concept.figure.caption}
-              width={1200}
-              height={800}
-              className="h-auto w-full"
-            />
-          </div>
-          <figcaption className="text-xs text-[var(--text-muted)]">
-            {concept.figure.caption}
-          </figcaption>
-        </figure>
+      {concept.figures?.length ? (
+        <div className="space-y-6">
+          {concept.figures.map((fig, i) => (
+            <figure key={i} className="space-y-2">
+              <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-raised)]">
+                <Image
+                  src={withBasePath(fig.src)}
+                  alt={fig.caption}
+                  width={1200}
+                  height={800}
+                  className="h-auto w-full"
+                />
+              </div>
+              <figcaption className="text-xs text-[var(--text-muted)]">
+                {fig.caption}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
       ) : null}
 
       <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-raised)] p-5">
