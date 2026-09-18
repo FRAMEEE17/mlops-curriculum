@@ -539,6 +539,23 @@ export const modules: Module[] = [
           "Platform work is a named responsibility in most senior MLOps roles, and it's the difference between an engineer who ships 1 pipeline and one who multiplies an entire team's output.",
         estimatedHours: 6,
       },
+      {
+        id: "mlops-org-and-investment",
+        name: "MLOps as an Organizational Bet, Not Just a Tech Stack",
+        hook: "Automated monitoring cannot catch drift if the alert routes to the wrong team.",
+        body: [
+          "Good MLOps practice fails for organizational reasons as often as technical ones. Clear ownership matters as much as the tooling itself.",
+          "1 common, effective pattern: a centralized MLOps team providing shared services (CI/CD, monitoring infrastructure) to multiple model-development groups. This promotes consistency and cuts duplicated effort.",
+          "An alternative: a federated model, embedding MLOps engineers inside product teams while a central architectural function handles system-wide integration. Both patterns work. What fails is having neither, responsibility fragmented with no clear owner.",
+          "2 anti-patterns to name directly. Tool-first adoption: bringing in infrastructure tools before defining the processes and roles around them, which produces fragile pipelines and unclear handoffs. Siloed experimentation: data scientists working disconnected from production engineers, producing models that are difficult to deploy or retrain.",
+          "MLOps investment has real, calculable ROI, not just a vague 'it's good practice' argument. For a single production model: CI/CD setup runs $10 to 30K one-time, monitoring and alerting $2 to 10K a year, a basic feature store $5 to 20K a year, a model registry under $5K a year.",
+          "Worked example: a model generating $1M in annual revenue, with 4 incidents avoided per year at $25K each ($100K saved) and 20 hours a month of deployment time saved at $150/hr ($36K saved), against a $30K annual MLOps investment, comes out to roughly 45x ROI.",
+          "The practical rule: invest in MLOps proportional to model criticality. A model driving $10M in annual revenue justifies more operational rigor than an internal analytics tool. Start with monitoring and CI/CD, the highest-ROI items, before adding a feature store or automated retraining.",
+        ],
+        whyItMatters:
+          "A hiring manager asking 'how would you convince leadership to invest in this' wants a number, not a values statement. Being able to sketch a rough ROI calculation, and name the org pattern (centralized vs federated) you'd propose, is a senior-level answer.",
+        estimatedHours: 5,
+      },
     ],
   },
   {
@@ -615,6 +632,11 @@ export const modules: Module[] = [
           "Latency dashboards and error-rate alerts are necessary and often get built first because they're the more familiar problem.",
           "Skew diagnosis needs a separate job: snapshot live feature distributions on a schedule, diff them against the training baseline, and alert on the diff itself, not on any single request.",
           "If a team's monitoring story stops at uptime and latency, this is the gap to point at.",
+          "The actual math behind 'diff the distributions' has a name: KL divergence. It measures how much information is lost approximating the training distribution P with the live serving distribution Q.",
+          "Worked example: a classifier trained on 60% positive, 30% negative, 10% neutral sees its live traffic shift to 45% positive, 40% negative, 15% neutral. Computing KL divergence both directions gives 2 different numbers, because KL divergence is asymmetric: D(P||Q) does not equal D(Q||P).",
+          "That asymmetry is awkward for a single alert threshold. The Population Stability Index (PSI) fixes it by symmetrizing the same underlying calculation, giving 1 number regardless of which distribution you call the baseline.",
+          "In this worked example, PSI comes out to 0.092. The common industry convention: PSI under 0.1 is stable, 0.1 to 0.2 is worth watching more closely, over 0.2 triggers a retraining alert.",
+          "Know this threshold by name in an interview. 'We diff the distributions' is vague. 'We compute PSI per feature and alert above 0.2' is a specific, implementable answer.",
         ],
         whyItMatters:
           "Helping stakeholders diagnose training/serving skew is a core responsibility that continues throughout the model's life in production.",
@@ -631,6 +653,11 @@ export const modules: Module[] = [
           "2 things need to run alongside every model from the start of production.",
           "A fairness dashboard tracking approval and default rates sliced by demographic proxy groups, watched with the same seriousness as accuracy metrics.",
           "An explainability layer (SHAP values are the common choice) that can turn 'the model said no' into 'insufficient repayment history relative to requested amount,' a reason a compliance team can defend.",
+          "Worked example, with real numbers: a loan model shows 85% accuracy for the majority group and 82.5% overall, numbers that look fine on a coarse dashboard.",
+          "Break it down by group. Majority group: 4,500 of 5,000 qualified applicants approved, a 90% true positive rate. Minority group: 600 of 1,000 qualified applicants approved, a 60% true positive rate. A 30-point gap, invisible in the aggregate number.",
+          "3 standard fairness metrics, computed from those same 2 confusion matrices, each measure something different. Demographic parity (equal approval rates): 55% versus 40%, a 15-point gap. Equal opportunity (equal true positive rates among qualified applicants): 90% versus 60%, a 30-point gap. Equalized odds (both TPR and FPR equal): false positive rates matched at 20% each, but the TPR gap alone violates it.",
+          "A real impossibility result worth knowing: when group base rates differ, these 3 fairness metrics generally cannot all be satisfied at once. Optimizing for equal opportunity can degrade predictive parity elsewhere. Make the tradeoff explicit instead of assuming 1 fix satisfies every definition of fair.",
+          "Automate this, don't compute it by hand once. Production systems compute per-group approval rate, TPR, and FPR every evaluation cycle, across every protected attribute, and alert when the disparity between groups crosses a threshold, commonly 5 percentage points for high-stakes decisions like lending. A 30-point gap like the one above should have paged someone well before launch.",
         ],
         whyItMatters:
           "This is the single biggest way lending MLOps differs from MLOps anywhere else, and it's very likely to come up in a case-study round with a credit-risk hiring manager.",
