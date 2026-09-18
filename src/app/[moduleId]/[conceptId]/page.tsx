@@ -41,13 +41,16 @@ export default async function ConceptPage({
         </p>
       </div>
 
-      <div className="space-y-4">
+      <ul className="space-y-3 pl-5">
         {concept.body.map((p, i) => (
-          <p key={i} className="text-[15px] leading-7 text-[var(--text)]">
+          <li
+            key={i}
+            className="list-disc text-[15px] leading-7 text-[var(--text)] marker:text-[var(--accent)]"
+          >
             {p}
-          </p>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {concept.figure ? (
         <figure className="space-y-2">
