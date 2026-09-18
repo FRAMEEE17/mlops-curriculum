@@ -5,7 +5,7 @@ export const curriculumName = "MLOps Engineer, Credit & Lending Track";
 export const curriculumIntro = [
   "This is a personal study plan for an MLOps role at a digital lending or credit card fintech, the kind of place processing loan applications for people who don't have a long credit history. The volume is high and latency has to stay low, with real money on the line every time a model says yes or no.",
   "A posting like this reads like a normal MLOps role at first glance: Kubernetes, CI/CD, monitoring, Python, a cloud data warehouse. Lending raises the stakes. A recommender that's 2% off just shows a slightly worse product. A credit model that's 2% off either lends money to someone who won't pay it back, or denies someone who would have. Both directions cost real money and, in a regulated market, real legal exposure.",
-  "8 modules now instead of 7. A new module 1 got added after the first pass through this curriculum felt too shallow: it named Kubernetes, databases, and streaming without ever explaining what any of them actually are underneath. This curriculum assumes you need to build a foundation across ML, software engineering, infra, and DevOps. So module 1 starts from the bottom, a database is a program on a disk, a container is a process with some Linux features turned on, and builds up from there before the rest of the modules layer credit-specific concerns on top.",
+  "9 modules now, up from 7. Module 1 (Systems Foundations) got added after the first pass felt too shallow: it named Kubernetes, databases, and streaming without ever explaining what any of them actually are underneath. Module 3 (The ML Lifecycle, In Depth) got added because the original 1-concept version of the lifecycle loop skipped who's actually involved at each stage, data scientists included. This curriculum assumes you need to build a foundation across ML, software engineering, infra, and DevOps, so it starts from the bottom and builds up.",
 ];
 
 export const modules: Module[] = [
@@ -31,7 +31,7 @@ export const modules: Module[] = [
           "Consistency, the C, is the odd one out. It describes your application's own rules (your invariants), which the other 3 guarantees help you preserve.",
           "'Every approved loan has exactly 1 signoff row' is a consistency invariant. The database can enforce it with a constraint if you tell it to, but it has no idea what your invariants are unless you say so.",
           "A model registry, a period-signoff table, an audit trail: every one of those is a database table with specific ACID guarantees leaned on for a specific reason.",
-          "When module 3 says a model registry tied to a data-versioning tool should let you name the exact model version live for any past prediction, atomicity and durability are the guarantees doing that work: the version pointer and the model artifact get written together or not at all, and once written it doesn't quietly disappear.",
+          "When module 4 says a model registry tied to a data-versioning tool should let you name the exact model version live for any past prediction, atomicity and durability are the guarantees doing that work: the version pointer and the model artifact get written together or not at all, and once written it doesn't quietly disappear.",
           "Explain which guarantee a tool relies on, not just the tool's name.",
         ],
         whyItMatters:
@@ -54,7 +54,7 @@ export const modules: Module[] = [
           "The other structure worth knowing by name is the LSM-tree, used by databases optimized for heavy write volume (Cassandra, and DuckDB's own storage engine leans on similar sorted-run ideas).",
           "Instead of updating the on-disk structure in place per write, an LSM-tree buffers writes in memory and periodically flushes sorted batches to disk, merging older batches in the background.",
           "That trades some read complexity (a lookup may check several sorted files) for much cheaper writes, the right tradeoff for a system logging every scoring request, feature snapshot, and training run.",
-          "These choices determine performance. A feature store's real-time lookup path answering in a few milliseconds (module 5's autoscaling concept) only works because someone matched the index to the access pattern: exact-key lookups get a hash-like index, range scans over time get a B-tree, high-write logging gets an LSM-tree.",
+          "These choices determine performance. A feature store's real-time lookup path answering in a few milliseconds (module 6's autoscaling concept) only works because someone matched the index to the access pattern: exact-key lookups get a hash-like index, range scans over time get a B-tree, high-write logging gets an LSM-tree.",
           "Picking the wrong one is a quiet, compounding performance bug that only shows up once traffic is real.",
         ],
         whyItMatters:
@@ -70,7 +70,7 @@ export const modules: Module[] = [
           "A container is a middle path: an ordinary process on the host's real kernel, wrapped with kernel features.",
           "Namespaces make the process think it has its own filesystem, network, and process list. Cgroups cap how much CPU and memory it's allowed to use.",
           "Starting a container takes milliseconds, not the seconds or minutes a VM boot takes, because there's no second kernel to boot.",
-          "A container solves packaging (a model and its exact runtime shipped together, module 4's whole pitch) and light isolation (1 noisy process can't starve another past its cgroup limit).",
+          "A container solves packaging (a model and its exact runtime shipped together, module 5's whole pitch) and light isolation (1 noisy process can't starve another past its cgroup limit).",
           "A container alone does not solve: what happens when it crashes and needs restarting, how 2 containers on different machines find each other, how you roll out a new version to 50 running copies without downtime, or which of 20 physical machines has room for the next container. Those are cluster-level problems, and they're what Kubernetes was built to solve.",
           "Kubernetes organizes a cluster into 2 kinds of machines. A small number run the control plane.",
           "kube-apiserver is the front door, a REST API every other component and every human talks to.",
@@ -105,7 +105,7 @@ export const modules: Module[] = [
           "Each layer exists because the one below it left exactly 1 problem unsolved. Learn the object names through the problems they solve.",
         ],
         whyItMatters:
-          "To 'autoscale the scoring endpoint' (module 5), another controller adjusts the replica count a Deployment already knows how to act on.",
+          "To 'autoscale the scoring endpoint' (module 6), another controller adjusts the replica count a Deployment already knows how to act on.",
         estimatedHours: 6,
       },
       {
@@ -125,7 +125,7 @@ export const modules: Module[] = [
           "2 design questions define every messaging system, worth asking explicitly about any streaming architecture you're handed.",
           "First: what happens if producers outrun consumers? The system can drop events, buffer them in a growing queue, or push back on the producer (backpressure).",
           "Second: what happens if a consumer crashes mid-read? Losing an in-flight sensor reading is probably fine (another arrives in a second). Losing a financial transaction event probably isn't, since that event was the only record it happened. 'We used Kafka' answers neither question by itself.",
-          "This is the foundation module 3's batch-vs-streaming-features concept already leans on: application-time features are naturally the batch case (bounded, arrives once, no ongoing stream needed), behavioral features are naturally the stream case (unbounded, arrives continuously, staleness has a real cost).",
+          "This is the foundation module 4's batch-vs-streaming-features concept already leans on: application-time features are naturally the batch case (bounded, arrives once, no ongoing stream needed), behavioral features are naturally the stream case (unbounded, arrives continuously, staleness has a real cost).",
           "A system that handles both through 2 code paths writing to the same feature store still needs to answer the 2 design questions above.",
         ],
         whyItMatters:
@@ -185,25 +185,6 @@ export const modules: Module[] = [
         estimatedHours: 6,
       },
       {
-        id: "ml-lifecycle-101",
-        name: "The Loop: Train, Validate, Deploy, Monitor, Retrain",
-        hook: "Most people can draw this loop. Fewer can say where it actually breaks.",
-        body: [
-          "The standard ML lifecycle diagram is a circle: data in, model trained, model validated, model deployed, model monitored, and eventually retrained on fresh data.",
-          "In a lending case study, a hiring manager typically wants you to explain where that loop breaks.",
-          "It breaks at the validate-to-deploy handoff most often: a model validated on last quarter's data looks great, but the applicant population has shifted (more first-time borrowers with thin credit files through a new channel, say), and the model's calibration silently degrades.",
-          "It breaks at monitor-to-retrain too: nobody set a clear trigger for 'retrain now,' so a model quietly serves stale decisions for months because the metric that would have caught it wasn't being watched.",
-          "Be ready to name the 2 or 3 places the loop fails in production and what you'd instrument to catch each failure.",
-        ],
-        whyItMatters:
-          "Every deeper module in this curriculum is really just 'this 1 step of the loop, in detail.' Get the loop straight first.",
-        estimatedHours: 4,
-        figure: {
-          src: "/figures/ml-lifecycle.jpeg",
-          caption: "The ML lifecycle loop, from Chen et al., Reliable Machine Learning (O'Reilly).",
-        },
-      },
-      {
         id: "stats-for-eval",
         name: "Why Accuracy Lies to You on Imbalanced Data",
         hook: "Most loan applicants don't default. That fact alone breaks naive accuracy.",
@@ -222,9 +203,151 @@ export const modules: Module[] = [
     ],
   },
   {
+    id: "ml-lifecycle-deep",
+    name: "The ML Lifecycle, In Depth",
+    order: 3,
+    intro:
+      "The lifecycle loop (data, train, build, evaluate, launch, monitor) is easy to draw and hard to run well. Each stage has its own failure modes and its own set of people involved, data scientists included. This module goes stage by stage, then covers where MLOps engineers and data scientists actually hand work to each other.",
+    concepts: [
+      {
+        id: "lifecycle-data-collection",
+        name: "Data Collection and Analysis: Where the Loop Starts",
+        hook: "ML begins and ends with data. Every other stage inherits whatever problems this one leaves unresolved.",
+        body: [
+          "The team first takes stock of what data it has, decides whether that's enough, and prioritizes which business uses to put it toward.",
+          "This stage touches almost everyone in the company, not just engineers.",
+          "Business and product teams know which parts of the business are worth optimizing, and can point to specific opportunities (a low-margin product line, a customer segment worth targeting).",
+          "Data and platform engineers build the reusable tools for ingesting, cleaning, and processing data.",
+          "Data scientists, product analysts, and UX researchers usually consume the output of this stage rather than build the pipeline themselves.",
+          "In a smaller org, some of these roles collapse into 1 or 2 people. In a larger one, there might be a formal data engineering team.",
+          "Whatever the org chart looks like, the same work has to happen: decide what data matters, then collect and process it before anyone can train a model.",
+        ],
+        whyItMatters:
+          "Every later stage in this module inherits whatever this one gets wrong. A model can't be better than the data decisions made here.",
+        estimatedHours: 4,
+        figure: {
+          src: "/figures/ml-lifecycle.jpeg",
+          caption: "The ML lifecycle loop, from Chen et al., Reliable Machine Learning (O'Reilly).",
+        },
+      },
+      {
+        id: "lifecycle-training-pipelines",
+        name: "Training Pipelines Are Production Systems, Not Notebooks",
+        hook: "A training pipeline that only 1 person understands is a production outage waiting for that person to leave.",
+        body: [
+          "Training pipelines are specified, designed, and built by data engineers, data scientists, ML engineers, and SREs together, not by 1 role in isolation.",
+          "They're a special-purpose ETL pipeline: read unprocessed data, apply the ML algorithm and model structure, produce a completed model ready for evaluation.",
+          "Training pipelines share every reliability challenge a normal data pipeline has, plus a few ML-specific ones.",
+          "Lack of data. Lack of correctly formatted data. Software bugs in the data parsing or the algorithm itself. Pipeline or model misconfiguration. Resource shortages. Hardware failures (common, since ML computation is large and long-running). Distributed system failures (often from the distributed setup you adopted specifically to avoid hardware failures).",
+          "Regular ETL pipelines share most of these. What's different for ML: a pipeline can fail silently because of a subtle problem in the data itself, a distribution shift, missing data, undersampling, not a crash, just a quietly worse model.",
+          "Real-world survey data backs this up: a large share of companies with ML in production still report moderate to severe issues getting data quality right, even ones with high expertise.",
+          "The practical implication: treat a training pipeline built by an intern (or in a rushed sprint) with the same production discipline as anything else you'd deploy. Write down what you did, automate it, and add correctness checks, before it becomes 'nobody remembers how to regenerate this model.'",
+        ],
+        whyItMatters:
+          "Training pipelines are absolutely a production system, worthy of the same care as a serving binary. Treating them as disposable notebook code is how teams end up with a model nobody can reproduce.",
+        estimatedHours: 6,
+        figure: {
+          src: "/figures/data-quality-survey.jpeg",
+          caption: "Survey data on data-quality challenges getting ML into production, from Wilson, Machine Learning Engineering in Action (Manning).",
+        },
+      },
+      {
+        id: "lifecycle-build-validate",
+        name: "Build, Validate, and Integrate the Model",
+        hook: "A model sitting in a file isn't useful. You have to interrogate it, which means integrating it with something.",
+        body: [
+          "A model is a set of software capabilities that only create value once something can query it and act on the answer.",
+          "This integration is specified by product and business staff, built by ML and software engineers, and checked by quality analysts. All 3 groups touch this stage.",
+          "There are 3 ways to validate an integration before it's fully live.",
+          "A live launch: the model takes real production traffic and affects the site immediately. Fast feedback, real risk if something's wrong.",
+          "A dark launch: the model gets queried and its output logged, but nothing user-facing uses that output yet. Confirms the plumbing works, tells you nothing about model quality.",
+          "A partial rollout: the model is live for a fraction of users or requests. Gives you both integration confidence and early quality signal, at the cost of a genuinely tricky question (which fraction, selected how) that this curriculum's experimentation module covers in depth.",
+          "Whichever path you pick, log what the model showed and what the user did next. That log is the feedback this same loop needs later to retrain.",
+        ],
+        whyItMatters:
+          "This is the stage where 'the model works in the notebook' becomes 'the model affects a real user,' and it's where a surprising amount of MLOps and data-scientist miscommunication happens (more on that later in this module).",
+        estimatedHours: 5,
+      },
+      {
+        id: "lifecycle-quality-slos",
+        name: "Quality Evaluation and SLOs for ML Systems",
+        hook: "Deciding what counts as 'working' is harder than it sounds, and it's not a decision engineering makes alone.",
+        body: [
+          "Start offline: run a representative set of queries, compare results to a believed-correct answer set. This estimates how the model should perform live, before it's live.",
+          "Service-level objectives, SLOs, are predefined thresholds ('99.99% of requests succeed within 150ms') that say whether a system is meeting requirements. The specific numbers are a joint call: SREs propose what's operationally realistic, product says what's tolerable for users, data scientists and ML engineers say what's achievable given the model.",
+          "Split SLOs by system, not just 1 blanket number: serving (error rate, latency), training (throughput, completion rate within a time budget), and the application itself (successful calls, shown results).",
+          "None of those 3 measure whether the model is actually good at its job. That needs its own SLO tied to the business metric (click-through rate on a recommendation, or in lending, approval accuracy against actual repayment), measured over a longer window and sliced by segment, not just in aggregate.",
+          "Cost has to enter this conversation too. A tighter latency SLA, higher prediction volume, and more frequent retraining all cost more, along a real tradeoff curve, not a free upgrade.",
+          "A project can clear every technical SLO and still get killed for cost. Executives track total cost of ownership even when the team doesn't, and it's cheaper to catch a bad tradeoff in week 1 of planning than to shut down a production service months in.",
+        ],
+        whyItMatters:
+          "SLOs for ML are harder to set than for a normal service because subtle data changes can quietly wreck them. Getting the right people (SRE, product, data science) into that conversation early avoids finding out the hard way.",
+        estimatedHours: 6,
+        figure: {
+          src: "/figures/deployment-cost-tradeoffs.jpeg",
+          caption: "Deployment cost tradeoffs across SLA, volume, complexity, and drift, from Wilson, Machine Learning Engineering in Action (Manning).",
+        },
+      },
+      {
+        id: "lifecycle-launch-discipline",
+        name: "Launching Without Breaking Production",
+        hook: "A model launch is a code launch. Treat it with less care and you'll relearn that the hard way.",
+        body: [
+          "Models are code, exactly like your training binaries and serving path. A bad model deploy can crash serving the same way a bad code deploy can.",
+          "Launch slowly, in 2 dimensions at once: start with a small slice of users and a small slice of your server fleet, and grow both only as confidence builds.",
+          "Release, don't refactor, during a launch. Changing as little as possible at once matters everywhere, but ML systems are unusually sensitive to it: a 'trivial' refactor can make a live regression impossible to diagnose.",
+          "Isolate rollouts at the data layer, not just the code layer. If a new model version writes output in a format an older version can't read (or vice versa), a rollback can make things worse, not better.",
+          "A real story from this exact failure mode: a payments system rolled out a change, saw rising errors, and rolled back as the safe move. Errors then shot to 100%. The new version had changed a data format, and the rollback left newer-format logs that the old binary couldn't parse. Letting the rollout finish would have fixed it faster than reversing it.",
+          "The lesson: think about every component that participates in a rollback, especially the data layer, before you assume 'roll back' is automatically the safe choice.",
+          "Keep at least 1 dashboard on the freshest, most sensitive metrics during a launch, and have a human (or later, an automated gate) watching it in real time.",
+        ],
+        whyItMatters:
+          "This is the operational discipline behind module 5's shadow-mode-before-canary approach, generalized: launches fail in specific, recurring ways, and most of them are avoidable with a checklist, not luck.",
+        estimatedHours: 6,
+      },
+      {
+        id: "lifecycle-monitoring-loop",
+        name: "Monitoring in 3 Layers, and Closing the Loop",
+        hook: "System health, model health, and model quality are 3 separate questions. Conflating them hides real problems.",
+        body: [
+          "System health, the golden signals: is the process running, is it making progress, is new data arriving. No different from monitoring any other distributed system. Don't let ML's complexity distract from checking the basics first.",
+          "Basic model health: are new models the expected size, do they load without errors. This needs no understanding of what the model actually predicts, just whether the artifact itself is sound.",
+          "Model quality, the hardest layer: is the model good at its job, in a domain-specific sense. There's no universal line between 'a quality problem worth an incident' and 'an opportunity for the next improvement.' That line is a product and business call, informed by ML engineers and SREs, not a purely technical one.",
+          "Whatever the model decided, and why, needs to flow back into the next round of data collection: log the query, the answer, and something about why that answer was given (a relevance score, or a fuller explanation).",
+          "That logged feedback is what lets the loop actually loop. Without it, every training run starts from the same static snapshot instead of learning from what happened after the last launch.",
+        ],
+        whyItMatters:
+          "Most teams build layer 1 first because it's familiar, then stop. Module 7's skew-diagnosis and observability concepts are a deeper look at layers 2 and 3, the ones that actually catch a quietly degrading model.",
+        estimatedHours: 5,
+      },
+      {
+        id: "working-with-data-scientists",
+        name: "Working With Data Scientists: Where the Handoffs Actually Happen",
+        hook: "A model that's 'done' to a data scientist and a model that's 'production ready' to an MLOps engineer are not the same claim.",
+        body: [
+          "Data scientists typically own model quality and experimentation: choosing features, trying architectures, deciding whether a metric improvement is real.",
+          "MLOps and ML engineers typically own pipeline reliability and production integration: making the training pipeline reproducible, packaging the model, wiring it into serving, keeping it fast and available.",
+          "SREs typically own system-level reliability: SLOs, on-call, the golden signals layer from the previous concept.",
+          "Product and business own the success metric the whole loop is supposed to move, and the final call on whether a model's quality is good enough to ship.",
+          "The friction point that shows up constantly: a model validated offline, on a clean, static dataset, behaves differently online, against live, messier data. That's not usually anyone being wrong, it's the 2 environments genuinely differing (module 4's application-time-versus-behavioral-features split is 1 concrete cause).",
+          "A second common friction point: 'done' means different things to different roles. A data scientist may consider a model done once its offline metrics clear a bar. An MLOps engineer needs it packaged, monitored, and rollback-safe before calling it done. Neither is wrong, they're describing different stages of the same lifecycle.",
+          "The fix isn't a process document, it's a shared vocabulary: agree explicitly on what artifact gets handed off (a model file plus its exact input schema plus its offline eval numbers, typically), and agree on who owns what happens to it after that handoff.",
+          "A real, well-documented failure mode worth knowing by name: a team ships a technically strong model (good test coverage, good offline metrics, low latency) and only discovers months later that nobody tracked whether it actually moved a business number. Good engineering and business relevance are 2 separate things, and validating both is a shared job, not solely engineering's or solely product's.",
+        ],
+        whyItMatters:
+          "An MLOps engineer who understands where a data scientist's responsibility ends and their own begins can design the handoff (a documented schema, a clear eval report, a known rollback path) instead of discovering the gap during an incident.",
+        estimatedHours: 6,
+        figure: {
+          src: "/figures/revenue-attribution-failure.jpeg",
+          caption: "A model that cleared every technical bar but had no answer for its business impact, from Wilson, Machine Learning Engineering in Action (Manning).",
+        },
+      },
+    ],
+  },
+  {
     id: "data-features",
     name: "Data & Features for Credit Risk",
-    order: 3,
+    order: 4,
     intro:
       "A credit model is only as good as the features it sees at decision time, and those features come from 2 very different places: what the applicant just told you, and what your systems already know about them.",
     concepts: [
@@ -262,7 +385,7 @@ export const modules: Module[] = [
           "A single, auditable feature definition also lets you answer a regulator's question of exactly what the model saw when it denied an application, months later, precisely.",
         ],
         whyItMatters:
-          "It prevents training/serving skew before it happens. Detection after the fact is covered in module 6.",
+          "It prevents training/serving skew before it happens. Detection after the fact is covered in module 8.",
         estimatedHours: 5,
       },
       {
@@ -284,7 +407,7 @@ export const modules: Module[] = [
   {
     id: "deployment",
     name: "Model Deployment & Serving",
-    order: 4,
+    order: 5,
     intro:
       "Getting a model from a notebook to a live endpoint that a real applicant hits is where 'data science' ends and 'production engineering' begins.",
     concepts: [
@@ -345,7 +468,7 @@ export const modules: Module[] = [
   {
     id: "kubernetes-platform",
     name: "Kubernetes & ML Platform",
-    order: 5,
+    order: 6,
     intro:
       "Kubernetes shows up explicitly in most MLOps postings, and interview loops for adjacent infra roles are known to ask about the control plane's working process in real depth. Be ready to explain how it works.",
     concepts: [
@@ -405,7 +528,7 @@ export const modules: Module[] = [
   {
     id: "experimentation",
     name: "Experimentation for Credit Decisions",
-    order: 6,
+    order: 7,
     intro:
       "Standard A/B testing assumes you can randomize freely and look at the result later. Credit decisions break that assumption in ways that matter.",
     concepts: [
@@ -416,7 +539,7 @@ export const modules: Module[] = [
         body: [
           "Champion/challenger is the credit-industry name for a specific discipline: a new model (the challenger) doesn't get equal traffic with the incumbent (the champion) from day 1.",
           "It starts on a small, capped, carefully monitored slice, and only earns a larger share as it proves itself against guardrail metrics over real volume, with a fast, automatic kill switch if those guardrails trip.",
-          "This is the same underlying idea as the progressive-rollout concept from module 3, but the framing matters in an interview.",
+          "This is the same underlying idea as the progressive-rollout concept from module 5, but the framing matters in an interview.",
           "'Champion/challenger' is the term a credit-risk hiring manager will actually use. Use that term in the interview.",
         ],
         whyItMatters:
@@ -457,7 +580,7 @@ export const modules: Module[] = [
   {
     id: "monitoring-reliability",
     name: "Monitoring, Fairness & Incident Response",
-    order: 7,
+    order: 8,
     intro:
       "This is usually the module a lending MLOps role cares about most: diagnosing skew, and being on call when a live credit model misbehaves.",
     concepts: [
@@ -522,7 +645,7 @@ export const modules: Module[] = [
           "When a page fires for the scoring service, start with this triage question: is this an infra problem (pods crash-looping, a downstream dependency down) or a model-behavior problem (approval rate or score distribution moved)?",
           "Infra problems usually have a fast, safe fix: roll back the deploy or fail over.",
           "Model-behavior problems are scarier because the fix isn't always obvious, and a rollback might just trade one bad model for a different, differently-bad one.",
-          "For a model-behavior incident, if the platform supports it (see module 3's shadow/canary work), flip a feature flag to route traffic to the last known-good model version immediately.",
+          "For a model-behavior incident, if the platform supports it (see module 5's shadow/canary work), flip a feature flag to route traffic to the last known-good model version immediately.",
           "That buys time to diagnose the root cause without applicants sitting on a broken decision path in the meantime.",
           "Write the incident retro the same day, while the timeline's still fresh, and commit to exactly 1 durable fix.",
         ],
@@ -535,7 +658,7 @@ export const modules: Module[] = [
   {
     id: "problem-solving-playbook",
     name: "The Problem-Solving Playbook",
-    order: 8,
+    order: 9,
     intro:
       "This skill applies across the modules. Interviews typically give you a vague prompt and assess how you turn it into a plan.",
     concepts: [
