@@ -349,6 +349,10 @@ export const modules: Module[] = [
           "A second common friction point: 'done' means different things to different roles. A data scientist may consider a model done once its offline metrics clear a bar. An MLOps engineer needs it packaged, monitored, and rollback-safe before calling it done. Neither is wrong, they're describing different stages of the same lifecycle.",
           "The fix isn't a process document, it's a shared vocabulary: agree explicitly on what artifact gets handed off (a model file plus its exact input schema plus its offline eval numbers, typically), and agree on who owns what happens to it after that handoff.",
           "A real, well-documented failure mode worth knowing by name: a team ships a technically strong model (good test coverage, good offline metrics, low latency) and only discovers months later that nobody tracked whether it actually moved a business number. Good engineering and business relevance are 2 separate things, and validating both is a shared job, not solely engineering's or solely product's.",
+          "When you're the one who spots a production problem (module 8's 4-way diagnosis), how you hand it to a data scientist matters as much as the finding itself. Lead with the observation and its scope, not a guess at the cause: 'approval rate dropped 8 points starting Tuesday, concentrated in applicants under 25' is useful. 'The model seems broken' is not.",
+          "Bring the artifact, not just the claim. A PSI-per-feature table, or a side-by-side of the top-shifted features, lets a data scientist start from evidence instead of having to reproduce your diagnosis before they can even begin theirs.",
+          "State clearly which of the 4 causes you've already ruled out and how. If you've confirmed the preprocessing code matches on both paths, say so explicitly, that saves the data scientist from re-checking training/serving skew and lets them go straight to asking whether this is real concept drift.",
+          "Keep the ownership boundary explicit in the handoff itself: you're bringing a well-scoped production observation, not a diagnosis of whether the model's underlying assumptions still hold. That judgment call is theirs. Handing over a half-finished guess dressed up as a conclusion is what erodes trust between the 2 roles fastest.",
         ],
         whyItMatters:
           "An MLOps engineer who understands where a data scientist's responsibility ends and their own begins can design the handoff (a documented schema, a clear eval report, a known rollback path) instead of discovering the gap during an incident.",
@@ -474,6 +478,10 @@ export const modules: Module[] = [
           "The new model scores every live application in parallel with the current one, but its output never touches an actual decision, it's just logged and compared.",
           "Only once shadow-mode metrics look right over a real volume of traffic does it move to a canary, where it influences a small, carefully bounded slice of real decisions.",
           "A guardrail metric, like default rate on the canary slice, auto-halts the rollout if it moves the wrong direction.",
+          "When a canary reveals a problem at partial traffic (an issue shows up at 30% but wasn't visible at 5%), the debugging move is to correlate multiple signals at once: the performance metrics, a distribution-drift check on that traffic slice, and a look at which specific feature's importance shifted. A single metric rarely tells the whole story on its own.",
+          "Rollback isn't 1 mechanism, it's 3 tiers, and conflating them is a common mistake. Immediate rollback (under 1 minute) handles serving errors and crashes, and only works if the previous model version is already loaded and warm, ready for an instant traffic switch. Rapid rollback (under 15 minutes) handles a canary metric that's clearly wrong, and needs the model registry to make redeploying the prior version a config change, not a rebuild. Delayed rollback (up to 4 hours) handles a problem that only shows up in a business metric hours later, and needs a plan for any state that accumulated while the bad model was live.",
+          "A credit-decision model is stateless in the simplest sense (each application scores independently), which makes rollback mechanically simpler than a stateful system like a session-based recommender. But 1 subtlety still applies: if a bad model's decisions have already fed back into training data (a rejected applicant who never appears in the next retrain, say), a rollback restores the model, not the data it will train on next. That contamination doesn't undo itself.",
+          "Rollback procedures that have never been rehearsed fail exactly when they're needed most, at 3am during a real incident. A monthly fire drill, actually triggering a rollback in a non-production environment, catches the config dependencies and stale-cache issues that never show up by just reading the runbook.",
         ],
         whyItMatters:
           "This is the single biggest difference between 'deploy a model' in a generic MLOps role and in a lending one. Expect a case-study question shaped exactly like this.",
@@ -617,6 +625,40 @@ export const modules: Module[] = [
     intro:
       "This is usually the module a lending MLOps role cares about most: diagnosing skew, and being on call when a live credit model misbehaves.",
     concepts: [
+      {
+        id: "drift-taxonomy",
+        name: "Data Drift vs Concept Drift vs Training/Serving Skew",
+        hook: "3 different bugs produce the same symptom (metric drops). Naming the right one decides the fix.",
+        body: [
+          "'Distribution shift' is the umbrella term. It covers any case where the world at serving time no longer matches the world the model trained on.",
+          "Data drift: the input distribution P(X) shifts, but the relationship between inputs and outputs, P(Y|X), stays the same. More applicants from a new channel, say, but a given applicant profile still repays at the same rate it always did.",
+          "Concept drift: P(Y|X) itself shifts. The inputs look the same, but the correct answer for a given input has changed. A macroeconomic shift where the same income-to-debt ratio now predicts a different default rate is concept drift, not data drift.",
+          "This distinction has real consequences, not just vocabulary. A system can have data drift without concept drift (the mix of applicants changed, but the underlying pattern still holds) or concept drift without data drift (the applicant mix is stable, but the world changed underneath it). Confusing the 2 leads to the wrong fix: fresh sampling corrects data drift, but only relabeling under current ground truth corrects concept drift.",
+          "Training/serving skew is a 3rd, distinct failure, and it's not drift at all. Drift is an external shift in the real world. Skew is an internal bug in your own engineering stack: the same conceptual feature computed 2 different ways in the training pipeline and the serving pipeline.",
+          "A concrete, real version of this bug: a session-length feature computed with wall-clock time in a Python training pipeline, but with processing time in a Java serving pipeline. Same feature name, 2 different numbers, and a model that trained on one distribution scores on another. This exact mismatch caused a real production system a 12% accuracy loss that took 6 weeks to detect and diagnose.",
+          "Skew is usually the easiest of the 3 to eliminate structurally (a feature store computing every feature exactly once, read by both paths), while drift can only ever be detected and responded to, never eliminated, since the real world will keep changing regardless of your engineering.",
+        ],
+        whyItMatters:
+          "'The metric dropped' has at least 3 structurally different root causes, and each needs a different fix. Naming which 1 it is, out loud, using the right term, is what a hiring manager is actually listening for when they ask 'how would you debug this.'",
+        estimatedHours: 6,
+      },
+      {
+        id: "four-way-production-diagnosis",
+        name: "The 4-Way Diagnosis When a Model Goes Bad in Production",
+        hook: "A metric drop has exactly 4 usual suspects. Check them in an order, don't guess.",
+        body: [
+          "When a deployed model's accuracy or approval rate moves and nobody changed the code, the practiced move is to check 4 causes in order, cheapest and most likely first.",
+          "1. Data drift: pull this week's feature distributions and diff them against the training baseline (this is the PSI check from the skew-diagnosis concept). Cheap to check, and the most common cause by far.",
+          "2. Training/serving skew: compare the actual preprocessing code on both paths, not just the feature names. Look specifically for timezone handling, unit differences, and library version drift between the training environment and the serving environment.",
+          "3. Configuration debt: audit what actually changed recently, a config value, a feature flag, a dependency version bump, a routing rule. This is the 1 cause that has nothing to do with the model or the data, and it's the 1 most likely to be found by just reading a deploy log.",
+          "4. Feedback loop contamination: check whether the model's own past predictions have leaked into its current training data. A recommendation model that only ever sees engagement data from items it already recommended is training on a biased sample of its own making.",
+          "A real illustrative pattern: a recommendation model boosted sales by roughly 15% at launch, then silently degraded over 6 months due to data drift that nobody caught because monitoring only tracked uptime, not prediction quality. By the time a routine quarterly review found it, the model had gone from a clear win to a net negative, and the compounding revenue impact over those months was substantial.",
+          "The detection-speed gap between having the right infrastructure and not having it is large and worth stating with a number: teams monitoring only outputs (accuracy, latency) commonly take 3 to 8 weeks to notice skew as it slowly shows up in aggregate metrics. Teams with a feature store and automated distribution checks between training and serving typically catch the same class of bug in 1 to 3 days.",
+        ],
+        whyItMatters:
+          "This is the concrete, orderable answer to 'metric dropped, what do you check first,' the exact question this curriculum's earlier module flagged as the 1 that separates a strong answer from a vague one.",
+        estimatedHours: 6,
+      },
       {
         id: "training-serving-skew-diagnosis",
         name: "Diagnosing Training/Serving Skew",
