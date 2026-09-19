@@ -941,4 +941,106 @@ export const modules: Module[] = [
       },
     ],
   },
+  {
+    id: "behavioral-interviews",
+    name: "Behavioral Interviews: STAR in Practice",
+    order: 11,
+    intro:
+      "A recent behavioral round scored 2.3 out of 5. The written feedback named the same failure 4 different times, in 4 different categories: real incidents, told badly. Not a knowledge gap, a delivery gap. This module rebuilds the actual stories against that specific feedback, not against generic STAR advice.",
+    concepts: [
+      {
+        id: "why-star-answers-fall-apart",
+        name: "Why Your STAR Answers Are Falling Apart",
+        hook: "The feedback said 'fragmented delivery, missing or unclear results.' That's a diagnosable pattern, not a vague complaint.",
+        body: [
+          "Read the actual feedback categories side by side and a single pattern repeats under 4 different names. Leadership: 'a role summary rather than personal action,' followed by a pivot into a technical walkthrough instead of a decision. Ownership: 'very difficult to follow and fragmented,' a real incident that never resolved into a clear arc. Problem-solving: 'largely incoherent,' fragments about a specific number thrown in without a connected narrative, no clear result. Conflict: the 1 category that scored highest, because it had a specific disagreement, a specific resolution, and a specific technical tradeoff named out loud.",
+          "The difference between the conflict answer and the other 3 isn't better material. All 4 stories are real, specific incidents. The difference is that 1 of them accidentally landed on the STAR shape and the other 3 didn't.",
+          "STAR has 4 beats and they are not equal in length. Situation: 1 sentence, just enough to place the listener (what project, what was at stake). Task: 1 sentence, what specifically had to happen and why it fell to you. Action: most of the answer, and it has to stay first person and specific, what you personally decided or did, not what the team or the pipeline did. Result: 1 or 2 sentences, and it needs a number, a decision that shipped, or a concrete before-and-after, not a vibe.",
+          "The recurring failure across this feedback: Action time got spent on technical detail (RAG pipeline architecture, precision and recall math) instead of on the actual decision or action, and Result either never arrived or trailed off mid-thought. A listener can follow a technically dense Action section if it's in service of 1 clear decision. A listener cannot follow a technical tour that replaces the decision entirely.",
+          "The fix that actually works under interview pressure isn't 'be more articulate.' It's preparing the story's 4 beats as separate, short, written sentences beforehand, so the shape exists before the live pressure of the room does. Constructing the arc live, from a real but unstructured memory, is what produced the fragmentation this feedback names directly: 'you are not constructing the story live.'",
+          "1 concrete tell to self-check against: if asked to repeat your own answer back in 4 sentences (1 per STAR beat), can you do it? If the Situation and Task blur into each other, or the Result is genuinely unclear even to you, that story isn't ready yet, no matter how real or impressive the underlying incident was.",
+        ],
+        whyItMatters:
+          "Every other concept in this module takes a real, already-existing incident and rebuilds it against this exact checklist. The framework only matters because it maps directly onto specific, named gaps in real feedback, not because STAR is a template worth memorizing for its own sake.",
+        estimatedHours: 4,
+      },
+      {
+        id: "leadership-one-decision-not-a-summary",
+        name: "Leadership: 1 Decision, Not a Role Summary",
+        hook: "'My task is to lead the team' and 'blend the team together' are job descriptions, not actions. An interviewer can't picture either one.",
+        body: [
+          "The feedback named the exact failure: the leadership answer stayed at the level of ongoing duties, then drifted into a full technical tour of a RAG pipeline (chunking, embedding, a vector database, retrieval) when asked what he personally built. Neither of those is a leadership action. Both are true, both are real, and neither answers the question.",
+          "The real material already exists: an AI hackathon in South Korea, leading as both AI engineer and project manager, a real result (reaching the finalist round against a large applicant pool, worth confirming the exact numbers before saying them out loud in an interview). What's missing isn't a better hackathon, it's picking 1 specific decision from inside it and telling that instead of the whole project.",
+          "The decision that's actually there, once you look past the tech: cutting the project's scope down to fit the deadline. That's a real leadership action, made under time pressure, that affected what the whole team built, and it doesn't need a single sentence of RAG architecture to explain.",
+          "Situation, 1 sentence: a hackathon team with a scope that wasn't going to finish in time. Task, 1 sentence: as lead, decide what to cut and get the team aligned on the smaller version fast enough that cutting it still left time to build it well. Action, most of the answer: what specifically got cut, why that piece and not another, and how that decision got communicated to the team, not talked over. Result, 1 or 2 sentences: the team shipped the cut-down scope on time and reached the finalist round, a concrete outcome that ties directly back to the scope-cutting call, not to the tech stack.",
+          "The technical detail (LangGraph, the retrieval pipeline) still belongs in the story, just relocated: 1 sentence of context for why the scope decision mattered (a multi-agent system has more moving parts than a single-agent one, so cutting the wrong piece could have broken more than it saved), not the centerpiece.",
+          "The question this answer still owes, and the feedback flagged it explicitly: what did you learn as a leader. Not a generic lesson. Something specific to making a scope call under deadline pressure with other people depending on it, stated in 1 sentence, at the end, after the result.",
+        ],
+        whyItMatters:
+          "This is the only category where the feedback said the real content existed but was buried under the wrong material. Relocating the technical detail instead of deleting it, and centering the scope-cutting decision instead of the pipeline, turns the same true story into an answer to the actual question.",
+        estimatedHours: 4,
+      },
+      {
+        id: "conflict-show-the-update-not-the-win",
+        name: "Conflict: Show the Update, Not the Win",
+        hook: "This was the highest-scoring answer in the feedback, and it still lost points for reading as 'his preference winning' instead of a genuinely worked-through disagreement.",
+        body: [
+          "The material here is already strong by the feedback's own account: a specific technical disagreement (build the RAG pipeline from scratch versus use a framework), a named reason for the other side's position (avoiding an unwanted abstraction layer, not just a vague preference), and a concrete resolution (the framework won out because the multi-agent version needed cross-agent tracing).",
+          "What's missing isn't a fact, it's a moment. The feedback names it directly: 'the moment you changed your mind or found common ground.' A conflict story that ends with 'and my option won' reads as a debate recap. A conflict story that includes 1 specific thing you updated your own thinking on, even a small thing, reads as an actual disagreement that got resolved rather than argued past.",
+          "Concretely, that means adding 1 beat between 'we disagreed' and 'we ended up with the framework': what did listening to the other side's concern about over-engineering actually change about the approach taken, even if the final tool choice didn't move. Maybe it meant keeping the framework usage narrower than originally planned, or building 1 component the scratch way first to prove it was actually needed. If there's a real answer to that, it's the single most valuable sentence to add to this story.",
+          "If there genuinely isn't one, that's worth being honest about in prep, not papered over. The fix in that case is different: reframe the resolution process itself as mutual, since 'both researching independently then reconvening' is already a real, fair process, not a unilateral decision. Naming that as a deliberate step ('we agreed neither of us should just assert an opinion, so we each went and checked it against the other option's actual tradeoffs before talking again') is a genuine show of navigating disagreement, distinct from 'I listened, then I was right.'",
+          "Close on what carried forward from the disagreement, not just the tool choice: does the reason the framework won (traceability across agents) get applied anywhere later, or influence how the next disagreement on the team got handled. That's the reflection beat the feedback flagged as missing across every story in this set, not just this one.",
+        ],
+        whyItMatters:
+          "This story is 1 sentence away from being genuinely strong. The lesson generalizes past this specific answer: a resolved disagreement rarely looks like 1 side being simply right. Naming the small thing that moved, even inside a clear final decision, is what separates 'I won the argument' from 'we worked through it.'",
+        estimatedHours: 3,
+      },
+      {
+        id: "ownership-compress-to-four-beats",
+        name: "Ownership: Compressing a Real Incident Into 4 Beats",
+        hook: "The feedback called this story 'very difficult to follow' despite it being a genuinely strong incident with a real technical insight inside it. That's a compression problem, not a substance problem.",
+        body: [
+          "The underlying incident is solid: a SQL join in a reconciliation pipeline logged 4 mismatch rows for a line that should have logged 2, caught through a CI fixture rather than a live failure, confirmed harmless against real data before being fixed, and closed with a specific, transferable lesson about testing what happens when both sides of a join match at once.",
+          "What made it hard to follow live is exactly what the general framework concept warns about: constructing the arc in real time from a real but unstructured memory, instead of having the 4 beats pre-separated. This incident has a genuinely technical Situation and Task, and technical detail is exactly where a live answer runs long and loses its shape.",
+          "Situation, 1 sentence: a reconciliation pipeline had a query that could double-count a mismatch under a specific, uncommon condition. Task, 1 sentence: confirm whether that condition had actually happened in the real data, and fix the underlying query if it hadn't already caused harm. Action, most of the answer, but capped: found it through a test fixture, not a live incident; checked the real dataset directly and confirmed it hadn't fired yet; proposed and got agreement on a rule for which cause should win when 2 checks overlap, before touching the SQL; fixed the join; added a regression check that pins the exact row count.",
+          "Result, 1 or 2 sentences, stated plainly: the fix shipped with a check that means this specific failure mode can't silently return, and it surfaced an identical bug pattern in a second file that got fixed in the same pass. That second part is a real, measurable multiplier on the original fix, and it's the kind of detail that got lost in a fragmented telling but lands clearly once the story has a shape to sit inside.",
+          "The lesson that already exists in this incident is a genuinely good one and shouldn't get cut for time: a check that passes every test you've written can still be structurally wrong, and the fix is asking what happens when 2 things on the other side of a join both match, not writing more tests against the cases you already thought of. State that as the closing line, after the result, not folded into the middle of the technical walkthrough.",
+        ],
+        whyItMatters:
+          "This is the clearest case in the whole set that the problem was never the material, it was the shape. The same incident, timed to about 90 seconds with the 4 beats pre-separated, is a strong answer instead of a hard-to-follow one.",
+        estimatedHours: 4,
+      },
+      {
+        id: "problem-solving-answer-the-how-did-you-learn-it",
+        name: "Problem-Solving: Answering 'How Did You Learn This'",
+        hook: "The question asked how you learned an unfamiliar domain. The answer never said. That's not a storytelling problem, it's a missing beat, and it's fixable in 1 sentence.",
+        body: [
+          "The underlying investigation is genuinely strong material: a defect showing up as 931 anomalous rows, a first correlation that looked right and wasn't (high recall, very low precision), and a resolution that split the population into 2 unrelated causes instead of forcing 1 explanation onto all of them. That's a real, well-executed piece of root-cause work.",
+          "What the feedback says is missing isn't more of that. It's the specific answer to 'how did you learn the domain,' asked directly, about a candidate with no accounting background investigating an accounting-system defect.",
+          "The honest answer is worth saying plainly, framed around what it demonstrates rather than treated as something to hide: used AI-assisted research to get quickly oriented on the accounting concepts that mattered (double-entry structure, what a clearing account is, why a document's debits and credits are supposed to net to zero), then didn't take any of that at face value. Every claim from that research got checked against the project's own source-of-truth documentation and, more importantly, against the real dataset itself before it shaped a single decision.",
+          "That framing turns a potentially weak-sounding admission into the actual differentiator: the interesting skill was never 'already knew accounting.' It was refusing to trust an explanation, AI-sourced or otherwise, until it held up against real data. That's the exact same instinct that caught the 11%-precision correlation trap later in the same story, stated once, up front, instead of implied.",
+          "Situation, 1 sentence: 931 rows with a value reading zero when it shouldn't, no accounting background to draw on. Task, 1 sentence: find the real cause, or causes, without guessing. Action, most of the answer, in order: got fast to speed on the relevant accounting concepts, verified that understanding against real documentation rather than trusting it blind, built a table testing every candidate explanation on precision and recall together, and used that table to see the population was actually 2 separate causes wearing 1 symptom. Result, 1 or 2 sentences, stated as an outcome, not a data dump: the real defect got a documented decision instead of a guessed patch, and a separate group of rows got correctly ruled out as expected behavior rather than misdiagnosed as the same bug.",
+          "The number ('11% precision,' 'almost 1,000 rows') belongs inside the Action beat, as evidence for why the first correlation was a trap, not scattered loose across the answer disconnected from what it was proving.",
+        ],
+        whyItMatters:
+          "This is the 1 story in the feedback where the missing piece is a specific fact, not a structural fix. Naming the learning method honestly, and framing it around the verification habit rather than apologizing for the gap, closes exactly the hole the interviewer pointed at.",
+        estimatedHours: 4,
+      },
+      {
+        id: "prep-sheet-collaboration-story",
+        name: "Prep Sheet: Building a Collaboration Story From Scratch",
+        hook: "The collaboration question got cut off before it was answered. There's no incident on file for it yet. That's worth fixing before the next round, not during it.",
+        body: [
+          "Collaboration questions usually aren't asking for a conflict (that's its own category, covered separately). They're asking about working effectively with someone whose style, pace, or working assumptions genuinely differed from yours, without it becoming a disagreement at all.",
+          "A concrete incident search, worth running deliberately rather than waiting for one to come to mind under pressure: a time you had to adjust how you communicated (more detail, less detail, written instead of verbal, synchronous instead of async) because the way you naturally work wasn't landing with someone else. A time you picked up slack on something outside your usual scope because a teammate was stuck and the deadline didn't move. A time you had to hand off unfinished work to someone else and had to think hard about what they'd actually need to pick it up cleanly.",
+          "The hackathon and the reconciliation project both plausibly contain a real answer here (a hackathon team working across a compressed deadline almost always has a moment like this), it just hasn't been isolated and written down yet the way the other 3 stories now have been.",
+          "Once a real incident is identified, run it through the same 4-beat compression the other concepts in this module use: 1 sentence of Situation, 1 sentence of Task, most of the time on the specific adjustment you made to work effectively with the other person, and a result that shows the collaboration actually produced something, not just that it felt smoother.",
+          "Write the 4 sentences down before the next interview, the same way the other 4 stories in this module got written down here. An unprepared answer to a predictable question is the single most avoidable gap left in this feedback.",
+        ],
+        whyItMatters:
+          "A collaboration question is one of the most commonly asked behavioral categories, and it's the 1 category with zero prepared material right now. Filling this in ahead of time, deliberately, is lower effort than any of the 4 rebuilds above and closes a gap that's currently guaranteed to come up again.",
+        estimatedHours: 3,
+      },
+    ],
+  },
 ];
