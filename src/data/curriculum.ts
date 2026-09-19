@@ -1041,6 +1041,24 @@ export const modules: Module[] = [
           "A collaboration question is one of the most commonly asked behavioral categories, and it's the 1 category with zero prepared material right now. Filling this in ahead of time, deliberately, is lower effort than any of the 4 rebuilds above and closes a gap that's currently guaranteed to come up again.",
         estimatedHours: 3,
       },
+      {
+        id: "english-phrase-toolkit",
+        name: "The English Phrase Toolkit for Live Delivery",
+        hook: "Knowing the right story doesn't help if the first 5 seconds of live English get away from you. This is the toolkit for that specific 5 seconds, and the 5 after it.",
+        body: [
+          "Opening a question without dead air: repeat the question back in your own words before answering it. 'So this is asking about a time I had to push back on a technical decision, is that right?' buys a few real seconds of thinking time while sounding engaged rather than stalled, and it double-checks you're answering what was actually asked, not a nearby question you'd rather answer.",
+          "Buying time on a genuinely hard question without filler words: say directly that you're taking a second, instead of filling the gap with 'um' or restating the question a second time. 'That's a good one, let me think through the clearest example for a second' is a complete, confident sentence. A held silence after a sentence like that reads as composed. The same silence with no sentence around it reads as stuck.",
+          "Linking phrases that double as an organizing structure: use a small, fixed set of transition phrases that map onto the 4 STAR beats, so each phrase also tells you (and the listener) which beat comes next. 'The situation was...' into 'what I specifically had to figure out was...' into 'so what I actually did was...' into 'the way that played out was...' Reusing the same 4 phrases every time turns them into scaffolding you don't have to invent live.",
+          "Answering an unseen-problem question honestly: say plainly that this exact case hasn't come up before, then narrate the reasoning out loud instead of pretending to already know the answer. 'I haven't run into this exact one, so let me think through it the way I actually would if it landed on my desk' sets the right expectation, then walking through 2 or 3 concrete hypotheses out loud, in order, is the actual answer to the question. Silence followed by a single guessed answer looks like luck. Visible reasoning looks like a repeatable process.",
+          "Naming a disagreement with a teammate without sounding like you steamrolled them: state their reasoning, in their terms, before your own. 'He was worried the extra layer would be over-engineering for what we needed, which is a fair concern given the timeline' before 'what changed my thinking was...' Framing it as 'we worked through it' rather than 'I convinced him' is a phrasing choice, not a fact you're allowed to fudge, so only use it where it's actually true.",
+          "Naming an opposite working style plainly, with the specific adjustment attached: vague phrases like 'we just communicated better' say nothing. Specific ones do the work: 'he preferred working through details in writing before a call, I tend to think out loud, so I started sending a short written summary first and that's what actually fixed it.' Name the actual difference (pace, detail level, written versus verbal, planned versus improvised) and the 1 concrete thing you changed, not the outcome alone.",
+          "Showing quick thinking without trying to be quick: the tell isn't speed, it's reacting to the specific thing just said instead of running a memorized script regardless of the question. Reference a detail from the interviewer's own wording back in your answer ('you mentioned edge cases specifically, so let me start there'), and open with 1 concrete number or detail before any abstraction, since a specific fact stated early reads as sharper than a general statement that only gets specific 3 sentences in.",
+          "All 7 of these are phrasing tools, not substitutes for a prepared story. They're what keeps a well-structured answer (built in the rest of this module) from falling apart in the first 10 seconds of live delivery, where most of the visible fragmentation in real feedback actually starts.",
+        ],
+        whyItMatters:
+          "The other concepts in this module fix what to say. This one fixes the gap between having the right answer ready in your head and getting the first sentence of it out cleanly under real interview pressure, which is where composure is actually won or lost.",
+        estimatedHours: 3,
+      },
     ],
   },
 ];
