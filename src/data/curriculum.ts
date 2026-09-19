@@ -216,6 +216,40 @@ export const modules: Module[] = [
           "This kind of question is a natural bridge between a Python round and a SQL round: pick a metric, justify it with a query. Eval metrics on imbalanced data show up constantly in credit risk technical screens.",
         estimatedHours: 5,
       },
+      {
+        id: "neural-net-fundamentals",
+        name: "Neural Networks From First Principles",
+        hook: "A neural network is a stack of simple threshold functions. Everything past that is what you build on top.",
+        body: [
+          "A single unit (historically a perceptron) computes a weighted sum of its inputs, adds a bias, and passes the result through an activation function that squashes it, usually into a fixed range or a hard cutoff at zero.",
+          "The activation function is what makes a network worth stacking. Without one, layered weighted sums collapse algebraically into a single weighted sum, no matter how many layers you add. Early networks used a sigmoid, which saturates smoothly between 0 and 1. Since around 2012, most networks use a rectified linear unit (ReLU) instead, effectively 'pass the value through if positive, zero otherwise,' which is cheaper to compute and turned out to make deep networks meaningfully easier to train.",
+          "A network with 1 hidden layer, given enough units in that layer, can approximate any continuous function to arbitrary precision. This is a real theorem, not a rule of thumb, and it explains why 'just add more units' was ever a plausible strategy before depth became the more common lever.",
+          "What the network learns is governed entirely by a loss function: a single number scoring how wrong the current weights are on the data you have. Regression problems typically use squared error. Classification problems typically use cross-entropy.",
+          "Training is gradient descent on that loss: nudge every weight a small step in the direction that reduces the loss fastest, repeat. Backpropagation is not a separate algorithm, it's the chain rule applied mechanically, layer by layer, to get the gradient of the loss with respect to every weight in the network without symbolically deriving the whole function by hand.",
+          "In practice, nobody computes the gradient over the entire dataset before taking a step. Stochastic (or mini-batch) gradient descent computes it over a small slice of the data, updates the weights, and moves to the next slice, trading a noisier gradient estimate for dramatically less compute per step.",
+          "Architecture choices encode assumptions about the data, not just capacity. A convolutional network assumes spatial locality (an edge is an edge wherever it appears in the image), so it reuses the same small set of weights across every position instead of learning a separate weight per pixel. A recurrent network assumes the rules governing a sequence don't change partway through it, so it reuses the same weights at every timestep.",
+          "Why any of this runs fast enough to be practical: every one of these computations, the forward pass, the loss, the gradient, is matrix multiplication, and matrix multiplication parallelizes cleanly across the thousands of small cores a GPU has. That's why CUDA (Nvidia's general-purpose GPU programming interface, originally built for graphics) is what actually made training deep networks at scale feasible, not a new mathematical idea.",
+        ],
+        whyItMatters:
+          "This curriculum otherwise treats the model as a black box the pipeline serves. An interviewer testing depth will ask you to justify why a specific architecture was picked, and 'because it worked in a tutorial' does not hold up against a follow-up question about what the architecture actually assumes about the data.",
+        estimatedHours: 8,
+      },
+      {
+        id: "overfitting-bias-variance",
+        name: "Overfitting, and the Curve You Should Be Able to Draw From Memory",
+        hook: "A model that hits zero loss on its training data has usually stopped being a model and started being a lookup table.",
+        body: [
+          "Fitting more features, or a more flexible model, always drives training loss down, sometimes all the way to zero, because a model with enough free parameters can bend itself through every training point exactly.",
+          "The problem is what happens on data it never saw during training. A model with several radial-basis-function features and training loss near zero can, on a held-out test set, produce errors that dwarf a much simpler model's, because it learned the noise between training points, not the actual pattern generating them.",
+          "This is why training loss alone is a useless stopping criterion. A model can be improving its training loss and getting worse at the actual job, generalizing to new data, at the same time, in the same training run.",
+          "The relationship between model complexity and error traces a specific, memorable shape: an underfit model (too few features) has high error on both training and test data. As complexity increases, both errors drop together. Past a certain point, training error keeps dropping while test error turns around and climbs. The gap between the 2 curves, not either curve alone, is what to watch.",
+          "Finding the point where that gap starts widening isn't guesswork. It's what cross-validation is for: split off a slice of the training data, never let the model see it during fitting, and use it to estimate the test-error curve without needing real future data you don't have yet.",
+          "In a credit model this isn't academic. A model with hundreds of engineered features and a small number of historical defaults can memorize the training set's specific defaulters instead of learning what actually predicts default, and the only way that shows up is on a genuinely held-out set, not on training metrics a rushed retrain might report.",
+        ],
+        whyItMatters:
+          "The complexity-versus-error curve is one of the first things a technical interviewer will ask you to sketch and explain, unprompted, in a modeling round. It's also the direct justification for why every retraining gate in this curriculum (module 5's CI/CD gate) compares against a held-out set, never against training performance.",
+        estimatedHours: 5,
+      },
     ],
   },
   {
@@ -685,6 +719,24 @@ export const modules: Module[] = [
         estimatedHours: 7,
       },
       {
+        id: "statistical-drift-tests",
+        name: "The Actual Statistical Tests Behind 'We Monitor for Drift'",
+        hook: "PSI and KL divergence answer whether a distribution has shifted. They don't tell you whether that shift is real or just noise. That's a different test.",
+        body: [
+          "Whether you can detect drift with a supervised test or only an unsupervised one depends entirely on whether ground-truth labels arrive in time to be useful. For a loan default, the true label (did they repay) might not be known for months, so you can't wait for it to catch a live problem. Feature-distribution monitoring, unsupervised by construction, is what fills that gap.",
+          "For a numeric feature, comparing this week's distribution to the training baseline has a standard test: the 2-sample Kolmogorov-Smirnov (KS) test, which asks whether 2 continuous distributions plausibly came from the same population, without assuming any particular shape for either one.",
+          "Running the KS test separately across every feature in a wide feature set creates a subtler problem: run enough independent hypothesis tests at a 5% significance threshold and some will come back significant by chance alone, even with no real drift anywhere. The fix is a Bonferroni correction: divide the significance threshold by the number of features being tested, which keeps the overall false-positive rate under control at the cost of needing a larger, clearer shift to trigger an alert on any single feature.",
+          "Variance shifts need a separate test from mean shifts, since 2 distributions can share a mean and still be meaningfully different. Levene's test checks specifically whether variance has changed between the baseline and the live distribution, independent of whether the mean moved at all.",
+          "Categorical features get a different test entirely, since KS and Levene are built for continuous data. A 1-way chi-square test compares the observed count in each category against the expected count from the training baseline, and flags a category mix that has shifted more than chance would explain.",
+          "Running these tests and getting a positive hit is the start of triage, not the end of it. Check data integrity first, before touching drift analytics: a null-value spike or a sudden unit change (a rating scale that silently moved from a 0-100 range to a 0-5 star scale, for instance) produces a statistically real distribution shift that has nothing to do with the real world changing, and 1 afternoon spent ruling that out saves a much longer investigation chasing a nonexistent concept shift.",
+          "Once data integrity is ruled out, attribute the shift: which features moved, do they matter to the model's global predictions or only to a narrow slice of traffic, and does the shift track back to a specific segment or time window. That attribution step is what turns 'something drifted' into a fix a data scientist can actually act on.",
+          "Wiring these checks into an automated gate, not a manual notebook someone runs occasionally, is what makes this operational. A model promotion pipeline can hold a candidate model in a staging registry state, run it against the same statistical battery used for live monitoring, and only promote it to production if it clears every test against the currently-live model's numbers, the same evaluation-gate discipline module 5 describes for offline metrics, applied to distributional ones too.",
+        ],
+        whyItMatters:
+          "PSI and KL divergence, covered earlier in this module, tell you a distribution moved. The KS test, Levene's test, and chi-square test, with a Bonferroni correction across features, are what let you say that move is statistically real and not noise from a small sample, which is the exact distinction a hiring manager is checking for when they ask which specific test you'd run.",
+        estimatedHours: 6,
+      },
+      {
         id: "fairness-explainability",
         name: "Fairness Monitoring and Explaining a Denial",
         hook: "A model that's accurate and illegal is still illegal.",
@@ -747,12 +799,99 @@ export const modules: Module[] = [
     ],
   },
   {
+    id: "system-design-patterns",
+    name: "System Design Patterns for ML Infrastructure",
+    order: 9,
+    intro:
+      "Infra-heavy MLOps interviews increasingly include a systems-design round shaped around 2 recurring problems: get a huge model onto a GPU fleet fast, and serve a flood of inference requests inside a tight latency budget. Neither is specific to lending, but both reward the same first-principles habit this curriculum has been building all along: name the real bottleneck, then design directly around it.",
+    concepts: [
+      {
+        id: "model-distribution-at-scale",
+        name: "Getting a Huge Model Onto a Thousand Workers Fast",
+        hook: "Copying a 500GB model to 1,000 machines one at a time takes roughly 111 hours. The right pipeline design does the same job in under a minute.",
+        body: [
+          "A large model in cloud storage isn't 1 file. It's a set of shards (large weight files, often tens of gigabytes each, in a format like safetensors), a small tokenizer file, a config describing the architecture, and a manifest listing a checksum for every shard, the only way to confirm nothing got corrupted after moving hundreds of gigabytes across a network.",
+          "Every byte crosses 5 stops on its way from storage to a served token, and each stop trades capacity for speed: object storage (durable, cheap, but reachable only over a shared, bandwidth-limited pipe), a machine's RAM (very fast, but wiped on restart), local NVMe disk (a durable cache in between, so a restart doesn't mean re-downloading everything), GPU memory (extremely fast, but small and expensive), and finally the user. Capacity shrinks and speed grows at every hop.",
+          "1 GPU typically can't hold a model this size in memory at all. A worker machine with 8 GPUs can, since the model shards split across all 8, and GPUs can't reach the network directly. Every byte has to pass through the host machine's RAM first.",
+          "The naive distribution strategy, a single seed machine uploading the full model to each worker in turn, wastes almost the entire fleet's network capacity: at any moment only 1 worker's download link and 1 seed's upload link are doing anything, while everyone else's connection sits idle.",
+          "A tree broadcast (the seed sends to 2 workers, each of those sends to 2 more, doubling each round) fixes the 'only 1 machine transmits at a time' problem, but not a second one: at any given moment a worker is either fully downloading or fully uploading, never both, so half of every machine's full-duplex network capacity sits unused the whole time.",
+          "The fix that actually saturates the network is chunking the model into many small pieces and pipelining them: as soon as a worker finishes receiving 1 chunk, it starts forwarding that chunk onward while simultaneously receiving the next one. Every worker is downloading and uploading at the same time, the whole time, which is the only way to actually use both directions of a full-duplex link.",
+          "Under that design, propagation of 1 chunk across N workers takes roughly log2(N) rounds to double outward, and the total time to saturate the whole fleet on every chunk works out to roughly the number of chunks plus the number of doubling rounds, times the time to move 1 chunk, a formula you can rederive on a whiteboard rather than needing to memorize a specific number.",
+          "Coordinating who has which chunk needs something faster than either a broadcast ('who has chunk 42?' shouted to every worker) or a query against a relational database (millions of lookups over the job, each costing milliseconds, adds up to an unacceptable bottleneck). The answer is a small, in-memory tracker service holding a few hash maps: which workers are alive, and which workers currently hold which chunk.",
+          "The tracker never touches the actual model bytes. It answers 4 kinds of calls: a worker registering itself, a worker asking who holds a given chunk, a worker announcing it finished downloading and verifying a chunk (the only call that grows the availability table), and a periodic heartbeat. The real chunk transfer happens directly between 2 workers, entirely outside the tracker's involvement.",
+          "This split has a name worth using explicitly: a control plane (the tracker, carrying small, frequent coordination messages) and a data plane (the workers, carrying the actual gigabytes, worker to worker). The tracker staying out of the data path is exactly why it never becomes the bottleneck no matter how large the fleet gets.",
+          "There's deliberately no central scheduler in this design. A scheduler exists to arbitrate between competing jobs fighting over shared resources. With 1 model going to the whole fleet, there's only 1 job, and the propagation algorithm itself already decides what happens next: pull the next chunk, send it to whoever needs it. A scheduler becomes worth adding only once multiple models are distributing at once and something has to decide which 1 gets the shared bandwidth first.",
+        ],
+        whyItMatters:
+          "This is a recurring systems-design question at companies running large models on GPU fleets, and it rewards the same first-principles reasoning this curriculum tries to build everywhere else: name the bottleneck (the shared bandwidth pipe), design directly around saturating it (chunked pipelining, not naive copying), and separate coordination from data movement so the coordination layer never becomes the new bottleneck.",
+        estimatedHours: 6,
+      },
+      {
+        id: "high-concurrency-inference-api",
+        name: "Designing an Inference API Under Real Concurrency",
+        hook: "A GPU can score 100 requests in parallel for close to the cost of scoring 1. The hard part is never the GPU. It's holding 100 connections open and routing each answer back to the right one.",
+        body: [
+          "A GPU has thousands of small cores that all execute the same operation at once. Sending it 1 input at a time wastes almost all of that capacity, since the GPU's per-call latency barely changes whether it processes 1 input or 100. This is the entire economic argument for batching: group concurrent requests, run them through the model together, and pay roughly the same latency cost for 100 answers that you'd pay for 1.",
+          "Batching creates a routing problem that's easy to underestimate: with 100 requests bundled into 1 GPU call, each held on its own open HTTP connection, something has to get each of the 100 answers back to exactly the caller who asked for it, without closing and reopening any connection along the way.",
+          "The tempting fix, tag every input with a request ID so the model's output carries that same ID back, actively hurts performance on a GPU. GPU threads execute in groups (warps) that run fastest when every thread reads and writes sequential memory addresses in lockstep. Looking up a tagged ID means jumping to a nonsequential address per thread, which breaks that pattern and can run an order of magnitude slower.",
+          "The actual mechanism is simpler and faster: position is the identity. Input at index 0 in the batch produces output at index 0, input at index 1 produces output at index 1, with no lookup involved, because that's simply how the underlying memory is laid out. The coordinating service, not the GPU, is the only place that needs to remember which index belongs to which waiting connection, and it records that mapping once, right before dispatching the batch.",
+          "On the request side, an incoming call cannot be closed and reopened later when its batch is ready, since HTTP doesn't allow resuming a closed connection. Instead, the connection parks on a future (a placeholder for a result that will arrive later), and the caller's thread yields without releasing the socket. When the batch resolves, the code resolves each future by its recorded index, which wakes the parked connection and sends its specific answer back.",
+          "The batch needs a flush trigger, and picking only 'flush when full' breaks badly at low traffic: at 5 requests a second, the very first request of a quiet stretch could wait for 95 more strangers to show up before anything gets sent. The standard fix is 2 conditions, whichever fires first: the buffer reaches its max size, or a fixed timeout (commonly in the tens of milliseconds) has passed since the first request in the current batch arrived. That timeout floor guarantees a bounded wait regardless of how quiet traffic gets, while the size trigger keeps batches full and GPU-efficient whenever traffic is heavy enough to fill 1 quickly.",
+          "Not every caller deserves equal treatment under load. A common pattern is 3 separate priority queues, rather than 1 queue with a priority field, so a higher tier is checked first in constant time with no scanning: enterprise, paid, free. Under sustained overload, a monitoring loop can track queue depth and dynamically throttle or reject lower tiers first, protecting the top tier's latency at the direct cost of clearly communicated, immediate errors to everyone else, rather than letting every tier degrade together into a queue nobody trusts.",
+          "Rejecting a request early, the instant a queue is already too deep, beats accepting it and letting it silently time out 30 seconds later. A fast, explicit error is strictly better for the caller than a slow, silent failure, and it also protects the system: work that will fail anyway shouldn't consume a batch slot that a request likely to succeed could have used.",
+          "A single batching process handling everything runs into a scaling ceiling well before a single GPU does. Running more batcher instances against 1 shared queue introduces a real race: 2 instances can both grab the same request and both dispatch it, producing either a duplicate response or, worse, a response delivered to the wrong caller. 3 fixes exist, each with a real tradeoff: partitioned consumer groups (each batcher instance owns a disjoint slice of the queue by design, the cleanest option under real production load, at the cost of running that queueing infrastructure); a shared distributed lock per flush window (simple to add, but contention gets worse exactly as load increases, which is the wrong direction); or consistent-hash routing at the API gateway, so each request is sent to 1 specific batcher instance before it ever reaches a shared queue at all, trading a small risk of hot-spotting for zero coordination overhead.",
+          "Scaling GPU capacity itself has a hard physical limit worth naming out loud: a new GPU instance commonly takes several minutes to provision and warm up, while a real traffic spike can arrive in seconds. The practical answer isn't provisioning faster, it's carrying deliberate headroom (a target utilization well under 100%, commonly cited around 70%) so a spike has somewhere to land while new capacity comes online, combined with asymmetric autoscaling: scale up aggressively the moment utilization or queue depth crosses a threshold, but scale down slowly, since an aggressive scale-down followed by another spike just re-creates the same cold-start problem you were trying to avoid.",
+          "A mid-batch GPU failure needs a bounded, explicit response, not an indefinite wait. Wrap the GPU call in a timeout; on failure, retry each affected request individually (never the whole batch as a unit, which would slam the same replacement GPU all at once) exactly once, and return a clean error on a second failure rather than retrying indefinitely. Uncapped retries under a partial outage are how a single failed GPU turns into a cascading pile-up across the rest of the healthy fleet.",
+        ],
+        whyItMatters:
+          "This is the same latency-budget-and-autoscaling tradeoff module 6 covers for a credit-scoring endpoint, worked through in more depth for a model-serving API specifically. The futures-plus-index-based-demux pattern and the 3-tier priority queue are exactly the kind of concrete mechanism an interviewer is listening for when they ask how you'd actually build the batching layer, not just what batching is.",
+        estimatedHours: 7,
+      },
+    ],
+  },
+  {
     id: "problem-solving-playbook",
     name: "The Problem-Solving Playbook",
-    order: 9,
+    order: 10,
     intro:
       "This skill applies across the modules. Interviews typically give you a vague prompt and assess how you turn it into a plan.",
     concepts: [
+      {
+        id: "ml-system-design-framework",
+        name: "A Repeatable Framework for Any ML System Design Prompt",
+        hook: "An interviewer handing you an open-ended ML system design prompt is grading whether you have a repeatable process, not whether you happen to know the 1 right model.",
+        body: [
+          "Work through 6 stages in order, since each depends on the answer from the one before it: the business problem, the data, feature engineering, model design and selection, deployment, and evaluation and monitoring.",
+          "Business problem first: name exactly what's being optimized, what metric measures success, and any hard constraint (a latency ceiling, a compute budget, how often predictions need to run). Sketch the roughest possible architecture, data in, model in the middle, output out, before touching any specifics. This stage alone often decides which of the later stages even matter.",
+          "Data second: identify where the data actually lives, confirm the target variable is genuinely present in it, not assumed to be, and check for quality problems and privacy constraints before writing a line of feature code. A model design built on data that turns out not to exist is wasted work.",
+          "Feature engineering third: pick features grounded in domain knowledge of what should matter, handle missing and inconsistent values, and convert everything into a form a model can consume (one-hot encoding, target encoding, embeddings, depending on the feature). This stage also has to handle class imbalance, check for label leakage, and produce a real train/test split, not an afterthought bolted on after modeling starts.",
+          "Model design and selection fourth, and always starting with a deliberately simple benchmark, a last-value prediction, a mean, a basic heuristic, before touching anything complex. A benchmark isn't a formality. It's the only way to know later whether a complex model's improvement is real or just noise. From there, add complexity in stages, and weigh the real tradeoffs at each step: interpretability, inference latency, and complexity all trade against raw accuracy, and the right point on that tradeoff depends on the constraints named in stage 1, not on which model is most impressive to describe.",
+          "Deployment fifth: decide the actual serving infrastructure, and whether the model needs to answer in real time, on a batch schedule, or at the edge. This is where a design that looked clean on paper meets real latency and cost constraints.",
+          "Evaluation and monitoring last, and it needs its own distinction: the offline metric used during development and the online metric that actually matters in production are frequently not the same number, and conflating them is a common, avoidable mistake. Plan for dashboards or an experimentation platform from the start, not as a follow-up after something already broke.",
+          "What's actually being graded across all 6 stages is narrower than it looks: can you translate a vague business problem into a concrete ML formulation, do you reason explicitly about tradeoffs instead of picking a model because it's trendy, and do you show enough breadth across the field, not necessarily depth in every corner of it, to justify each choice you make rather than defaulting to 1 familiar tool for every problem.",
+          "A useful tell for whether an answer landed: 2 candidates solving the identical problem with 2 completely different, reasonable architectures is normal in this field, not a sign 1 of them is wrong. What separates a strong answer from a weak one is whether every choice ties back to a named constraint from stage 1, not whether it matches some canonical solution.",
+        ],
+        whyItMatters:
+          "This is the scaffolding the rest of this module (scoping a problem, ordering a plan, explaining it to a non-technical stakeholder) hangs off of. Walking an interviewer through these 6 stages, out loud, in order, is what turns a vague prompt into a structured answer instead of a monologue about 1 favorite algorithm.",
+        estimatedHours: 5,
+      },
+      {
+        id: "should-you-use-ml-at-all",
+        name: "Before Any of This: Should the Problem Use ML At All",
+        hook: "Machine learning is one of the most expensive ways to solve a problem you didn't actually need to solve with machine learning.",
+        body: [
+          "ML systems accumulate a specific, well-documented kind of technical debt faster than most software: the boundary between a model and the systems around it erodes over time (its own predictions can quietly change the behavior it was trained to predict), it depends on expensive, often invisible data pipelines, and it stays exposed to a changing external world in a way plain business logic mostly isn't. That complexity is a real, ongoing cost, not a one-time setup tax.",
+          "Because of that cost, the honest first question isn't which model, it's whether the value the project creates clearly outweighs the complexity ML adds on top of whatever simpler approach already exists. A rule-based or purely statistical first version, tried and measured before reaching for ML, often captures most of the achievable value at a fraction of the ongoing cost, and for problems that are naturally rule-shaped, that first version is sometimes the right permanent answer, not just a placeholder.",
+          "3 factors drive the real cost of an ML project, and each is worth pricing out explicitly before committing: how available, and how expensive to label, the needed data actually is; how strict the required accuracy is, since cost tends to scale steeply, not linearly, with each additional 9 of required accuracy; and how intrinsically hard the underlying prediction problem is, independent of how much data or compute gets thrown at it.",
+          "Projects tend to fall into 1 of 3 shapes, and each shape changes both how feasible the project is and what questions matter most while building it. Software 2.0: automating something a system already does, just doing it more accurately, generally the most feasible and the lowest-risk starting point, but also usually the lowest individual impact, since there's already a working baseline to beat. Human-in-the-loop: making a human's judgment faster or better without removing them from the final decision, which lowers the required accuracy bar (the human catches what the model misses) at the cost of a smaller, indirect impact than full automation. Autonomous: replacing the human's judgment entirely, the highest potential impact and also the highest bar, since there's no human left in the loop to catch a wrong call.",
+          "The most valuable projects tend to build a data flywheel: a better model attracts more usage, more usage generates more real data, and that data trains a better model next round, a loop that compounds instead of a one-time win. Whether a given project can build 1 at all is worth asking explicitly before committing resources, since a project without a plausible flywheel usually has a hard ceiling on how much better it can ever get.",
+          "A tempting but weak heuristic, sometimes framed as 'anything a person can do in under a second, a computer can now do too,' breaks down constantly and shouldn't be used to size feasibility. Tasks that look effortless to a human (real generalization to a genuinely new situation, robust behavior on messy real-world inputs, reliably avoiding confidently wrong answers) remain some of the hardest problems in the field, regardless of how fast a person does them.",
+          "In a lending context specifically, this framing sharpens the earlier module 6 ROI-calculation concept into an ordering question, not just a go or no-go one: a credit decision is high-stakes and irreversible enough that it usually belongs closer to the human-in-the-loop or carefully-gated-autonomous end of the spectrum, and the accuracy bar for shipping it should be set explicitly against that, not against whatever number a first model happened to hit in a notebook.",
+        ],
+        whyItMatters:
+          "This question, asked and answered honestly before any modeling starts, is what keeps a project from becoming a technically impressive model nobody asked for. It's also a direct, natural bridge into the next concept's scoping questions: you can't scope a problem you haven't first confirmed is worth solving this way.",
+        estimatedHours: 5,
+      },
       {
         id: "scope-the-problem",
         name: "Scope Before You Solve",
