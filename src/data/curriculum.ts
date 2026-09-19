@@ -1059,6 +1059,23 @@ export const modules: Module[] = [
           "The other concepts in this module fix what to say. This one fixes the gap between having the right answer ready in your head and getting the first sentence of it out cleanly under real interview pressure, which is where composure is actually won or lost.",
         estimatedHours: 3,
       },
+      {
+        id: "technical-narration-vocab-bucket",
+        name: "Explaining Technical Work Without Sounding Like Everyone Else",
+        hook: "'I leveraged X to build a robust, scalable solution' is what every other candidate says. It says nothing. A distinctive vocabulary is precise, not fancier.",
+        body: [
+          "Explaining a technical solution: skip straight past 'I used X' and open with the constraint that actually decided the design. 'The thing that decided this was that the coordinator couldn't touch every byte, so it had to stay out of the data path entirely' says more in 1 sentence than a full list of tools. Close every technical explanation with the tradeoff you accepted, not just the win: 'the cost of that choice is X,' since naming a real cost is what separates an engineer from someone reciting a feature list.",
+          "Telling a project story without turning it into a walkthrough: open with the shape of the problem in 1 sentence, not the tech stack. 'The shape of it was: a fixed amount of network bandwidth, a lot of machines that needed the same data, and a naive copy that would've taken hours' sets up why the solution mattered before a single tool name gets mentioned. State scope explicitly and early, 'end to end, this was me and 1 other engineer, over about 3 weeks,' so the listener isn't left guessing how much of it was really yours.",
+          "Showing a systematic process without leaning on a tool as the explanation: the goal isn't to hide that you used any tool, including AI-assisted research, it's to make clear that the tool never did the deciding. 'Before I trusted anything, I mapped out the 3 or 4 explanations that could fit, then went and checked each one against the real data' is a process statement. 'I asked and it told me' is not, because it skips the part that's actually yours: which explanations you considered, in what order, and what you checked before believing any of them.",
+          "Vocabulary that signals real process, worth having ready rather than improvised: 'I treated that as a hypothesis, not an answer, until I checked it against...' 'the first thing I ruled out was...' 'that correlation looked right until I checked precision and recall together, and it wasn't.' Each of these names a specific reasoning step, which is what makes it read as process instead of a conclusion you're asserting.",
+          "Showing your approach to a specific problem, structured so it reads as a method rather than a lucky guess: name what you ruled out first and why, name the specific signal that told you it was 1 cause and not another, then state that the fix followed directly once the cause was actually isolated. 'The signal that told me it was a pipeline bug and not a real shift was that the gap was concentrated in 1 feature, not spread across all of them' is concrete and checkable. 'I looked into it and found the issue' is neither.",
+          "A short list of words worth cutting on sight, because every other candidate reaches for them and they carry no information: leverage, robust, scalable, seamless, cutting-edge, synergy, passionate about. None of these describe an actual decision. Replace each with the specific thing that was actually true: not 'a robust pipeline,' but 'a pipeline that replays cleanly from any failed step without double-counting.'",
+          "The distinctiveness isn't from unusual words, it's from specificity where other people default to a generic claim. 'I improved performance' is what everyone says. 'The query went from a full table scan to an index lookup, and the p99 dropped from 4 seconds to under 200 milliseconds' is what almost nobody says, because it requires having actually understood the mechanism, not just remembered that something got faster.",
+        ],
+        whyItMatters:
+          "Interviewers hear the generic version of every answer dozens of times a week. A vocabulary built around naming the actual constraint, the actual tradeoff, and the actual reasoning step is what makes a technically similar answer land as more credible, not because the words are rarer, but because generic phrasing is exactly what a memorized, unverified answer sounds like.",
+        estimatedHours: 3,
+      },
     ],
   },
 ];
