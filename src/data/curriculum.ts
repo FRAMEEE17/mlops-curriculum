@@ -456,6 +456,66 @@ export const modules: Module[] = [
           "Model and data versioning policy is a named responsibility in most MLOps roles at a regulated fintech. In lending, versioning is a compliance requirement.",
         estimatedHours: 4,
       },
+      {
+        id: "fraud-detection-product-surface",
+        name: "Fraud Detection as a Product Surface, Not Just a Flag",
+        hook: "A fraud model that catches everything also blocks a pile of good customers. The real product decision is where to draw that line, not whether the model is accurate.",
+        body: [
+          "Fraud detection and credit risk look similar (both score a transaction or an applicant and output a probability) but optimize against a different, and much less forgiving, cost structure. A missed fraud case is a direct, immediate loss. A false fraud flag on a real customer costs a declined transaction, a frustrated user, and in the worst case, that user never coming back, a cost that's real but harder to put a single number on.",
+          "That asymmetry is why fraud systems live or die on the threshold, not the model. The same score distribution can be tuned toward aggressive blocking (catch more fraud, frustrate more real customers) or toward high tolerance (approve more real customers, eat more fraud loss), and picking that threshold is a product decision informed by the model, not a purely technical one.",
+          "In practice this usually isn't 1 threshold, it's a tiered response: a very high score blocks outright, a middle band routes to a manual review queue or triggers a step-up verification (an OTP, a selfie check), and a low score passes straight through. Each tier trades latency and friction against risk differently, and getting the tier boundaries wrong either drowns a review team in false positives or lets real fraud sail through the middle band.",
+          "The feedback loop matters more here than in most credit-risk work, because fraud patterns adapt on purpose. A confirmed fraud case (a chargeback, a manual investigation's conclusion) is a label that should flow back into retraining quickly, since a fraud ring that finds 1 gap will keep exploiting it until the model sees enough confirmed cases to close it. A model retrained monthly on a fraud problem that mutates weekly is structurally behind before it even ships.",
+          "The same monitoring instinct from module 8 applies directly here, with a fraud-specific twist: watch the block rate and the review-queue volume as their own metrics, not just model accuracy. A sudden spike in the review queue can mean an actual fraud wave, or it can mean a legitimate new customer segment (a marketing campaign in a new region, say) that looks unfamiliar to a model trained on the old population. Those need completely different responses, and conflating them wastes a review team's time on the wrong problem.",
+        ],
+        whyItMatters:
+          "Fraud prevention is its own product area at most lending companies, distinct from credit-decisioning, and it's exactly the kind of area a product-side interviewer will probe on directly. The threshold-as-product-decision framing, and the block-rate-versus-review-queue distinction, is what separates an answer about fraud from a generic answer about classification accuracy.",
+        estimatedHours: 5,
+      },
+      {
+        id: "collections-workflow-automation",
+        name: "Collections: What Happens After a Loan Goes Delinquent",
+        hook: "Approving the loan is 1 decision. What happens when a payment doesn't arrive is a whole separate ML and workflow problem.",
+        body: [
+          "Collections starts the moment a scheduled payment is missed, and the operational reality is a funnel: most delinquencies are early and self-cure (the payment shows up a few days late, no intervention needed), a smaller share need a nudge (a reminder message, a call), and a smaller share still are heading toward real default and need a different kind of outreach entirely.",
+          "The ML problem underneath that funnel is a propensity-to-pay score: given how late a payment is, the borrower's history, and their current profile, how likely are they to pay without intervention, and if they need intervention, which channel and message actually moves that likelihood.",
+          "This is where workflow automation earns its keep. Manually deciding who gets called on day 3 versus day 30 doesn't scale past a small loan book. A rules-plus-score system that buckets accounts by days-past-due and propensity score, then automatically triggers the right channel (an SMS reminder at the cheap, low-friction end, a phone call at the more expensive, higher-touch end) is what actually reduces manual collections work while keeping recovery rates up.",
+          "The channel and message choice is itself something worth A/B testing, using exactly the champion/challenger and guardrail-metric discipline module 7 already covers, just applied to a different decision: does an earlier, gentler reminder recover more accounts than a later, firmer 1, and does either approach change which customers close their account afterward, a real cost that a narrow recovery-rate metric alone would miss.",
+          "The data engineering underneath this is genuinely batch-and-stream both at once, the same split module 4's `batch-vs-streaming-features` concept covers: days-past-due and payment status need to update close to real time so a collections workflow doesn't act on stale information, while the propensity model itself typically retrains on a batch cadence against a longer window of repayment history.",
+        ],
+        whyItMatters:
+          "Collections is 1 of the 2 biggest gaps between a generic MLOps curriculum and a lending-specific one, alongside fraud. It's also a direct, named responsibility on a lending product team, and a strong, concrete area to have a real opinion on in a product-facing interview.",
+        estimatedHours: 5,
+      },
+      {
+        id: "decision-engine-external-data",
+        name: "A Decision Engine: Internal Features, External Data, and Policy Rules Together",
+        hook: "A model score is 1 input to a credit decision, not the decision itself. A decision engine is the thing that combines it with everything else.",
+        body: [
+          "A production credit decision usually isn't 'call the model, use its output.' It's a decision engine: an orchestration layer that pulls internal features (from the feature store), calls out to 1 or more external data providers (a credit bureau, a telco data partner, a device-fingerprinting service), combines all of that with the model's own score, and applies policy rules (hard cutoffs, regulatory constraints, business rules that exist independent of what any model thinks) before producing a final approve, decline, or refer-for-review.",
+          "External data calls are the part that's easy to underestimate in a design discussion, because they introduce failure modes a purely internal pipeline doesn't have. A third-party bureau or data provider can be slow, rate-limited, or simply down, and a decision engine has to have an explicit answer for what happens then: a strict timeout with a documented fallback (use a lighter internal-only model, or route to manual review) is a real design decision, not an afterthought, and 'we retry until it works' is not an acceptable answer when a real applicant is waiting on a decision.",
+          "Policy rules sit conceptually above the model, not beside it. A model might score an applicant as low risk, but a hard policy rule (below a minimum age, above a maximum requested amount for a first-time borrower, on an internal or external watchlist) can still override that score outright. Keeping that rule layer separate and auditable, rather than trying to bake every policy constraint into the model itself, is what lets compliance and risk teams change a rule without waiting on a model retrain.",
+          "This is also where the versioning discipline from this module's earlier concept extends past just the model: a specific decision needs to be traceable not just to a model version, but to which external data provider responded, what it returned, and which policy rule set was active at that moment. A regulator's question about why a specific applicant was denied might have nothing to do with the model at all, and being unable to answer that because the external-data and policy layers weren't logged the same way the model was is a real, avoidable gap.",
+          "Latency budgets compound across this whole chain. Module 6's autoscaling concept covers keeping the model's own inference fast, but a decision engine's real end-to-end latency is the model plus every external call plus the policy evaluation, and a slow third-party provider can blow a tight point-of-sale latency SLA even when the model itself responds in a few milliseconds.",
+        ],
+        whyItMatters:
+          "'We call a model and use its score' undersells what a real credit decision actually requires. Naming the orchestration layer, the external-data failure modes, and the policy-rule separation explicitly is what a product-side interviewer who's actually built 1 of these will be listening for.",
+        estimatedHours: 6,
+      },
+      {
+        id: "acquisition-vs-portfolio-models",
+        name: "Acquisition Risk and Portfolio Health Are 2 Different Models",
+        hook: "'Will we approve this new applicant' and 'is this existing borrower's risk changing' sound like the same question. They're not, and conflating them is a real mistake.",
+        body: [
+          "An acquisition model answers a question about someone the business has never lent to: given an application and whatever external data is available, what's the probability they default if approved. It's evaluated at 1 point in time, at the moment of the decision, and it has to work with comparatively thin data, since a new applicant has no repayment history with this lender yet.",
+          "A portfolio model answers a different question about an existing borrower: given how their account has actually behaved since origination (payment history, utilization, any recent stress signals), has their risk profile changed since they were first approved. It has much richer behavioral data to work with, and it's evaluated continuously, not just once.",
+          "The actions each model actually drives are different too, which is why treating them as 1 problem is a real design mistake, not just a labeling nitpick. An acquisition model's output feeds an approve/decline/price decision at origination. A portfolio model's output feeds ongoing account management: adjusting a credit limit up or down, flagging an account for proactive outreach before it becomes delinquent, or feeding into the collections propensity work covered earlier in this module.",
+          "The label definitions differ too, and this is the detail worth being precise about in an interview. An acquisition model's label is usually a fixed-horizon outcome (did this account default within its first 12 or 24 months). A portfolio model often needs a rolling or time-varying label, since the question isn't 1 fixed outcome, it's whether risk is trending up right now, on an account that might be 3 years into its life.",
+          "Practically, this means 2 separate model families, 2 separate evaluation setups, and 2 separate retraining cadences, not 1 model serving both purposes. An acquisition model needs fresh applicant and market data to stay calibrated as the applicant population shifts. A portfolio model needs fresh behavioral data on the existing book, and it's the 1 more exposed to the concept-drift scenario module 8 covers (a macroeconomic shift changing what a given behavior pattern actually predicts), since it's watching the same borrowers over time as the world underneath them changes.",
+        ],
+        whyItMatters:
+          "This distinction is exactly what a product leader running both acquisition and portfolio work will expect a strong candidate to draw cleanly, unprompted. Naming the different labels, different time horizons, and different downstream actions is the difference between sounding like someone who's built 1 of these and someone repeating a term from a job description.",
+        estimatedHours: 5,
+      },
     ],
   },
   {
