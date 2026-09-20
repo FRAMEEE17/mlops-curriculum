@@ -1242,4 +1242,83 @@ export const modules: Module[] = [
       },
     ],
   },
+  {
+    id: "reading-a-product-interviewer",
+    name: "Reading a Product-Side Interviewer",
+    order: 13,
+    intro:
+      "A Product Lead who built the credit decision engine and the A/B testing framework, and now leads the data science team, isn't testing Kubernetes depth. This module names 5 specific things that interviewer is actually listening for, and gives a small, sayable answer move for each 1, not a longer explanation to memorize.",
+    concepts: [
+      {
+        id: "translate-metric-to-tradeoff",
+        name: "Answer With the Business Metric, Not the ML Metric",
+        hook: "What's being tested: whether a technical choice gets connected back to approval rate or default rate without being asked to.",
+        body: [
+          "The tell: an answer that stays in ML vocabulary (precision, recall, AUC) the entire time, and the business consequence only comes out if the interviewer specifically asks for it.",
+          "The move: state the tradeoff in business terms first, in 1 sentence, before any technical detail. 'This trades some false positives for fewer false negatives, which here means more good applicants get a manual review, in exchange for catching more real defaults.'",
+          "Keep it to 1 sentence. A longer setup before the tradeoff is exactly the pattern this interviewer has heard from every other candidate.",
+          "Do this every time a metric comes up, not just when asked directly. Naming it unprompted is the actual signal, not the content of the tradeoff itself.",
+        ],
+        whyItMatters:
+          "This person owns approval rate and default rate as their own product metrics. Speaking in that language first is what makes an answer land as relevant to them personally, not just technically correct.",
+        estimatedHours: 2,
+      },
+      {
+        id: "know-your-boundary-with-ds",
+        name: "Know Where Your Job Ends and the Data Scientist's Begins",
+        hook: "What's being tested: whether the answer quietly claims ownership over decisions that belong to the data science team this person leads.",
+        body: [
+          "The tell: 'I decided to use this feature' or 'I chose this architecture' for anything that's actually a modeling decision, not a pipeline or infra decision.",
+          "The move: default to 'made it possible for the data science team to...' when the topic is a feature, a model choice, or an experiment design. Reserve 'I decided' for pipeline reliability, deployment, and infra, the actual MLOps scope.",
+          "This isn't false modesty, it's accuracy. Getting this line right is 1 of the clearest signals to someone who personally leads a data science team.",
+          "If genuinely unsure which side of the line a specific decision falls on, say that directly: 'that one sat closer to the DS side, I supported it by...' A candidate who can't draw this line at all is a bigger red flag than getting 1 edge case slightly wrong.",
+        ],
+        whyItMatters:
+          "This person's own team is the data science team. Overclaiming here doesn't just sound wrong, it reads as someone who'd actually be friction for their team day to day.",
+        estimatedHours: 2,
+      },
+      {
+        id: "defend-in-plain-terms",
+        name: "Defend a Decision to Someone Who Isn't an Engineer",
+        hook: "What's being tested: real understanding versus memorized jargon, since jargon with no plain-language version usually means the underlying idea was never fully understood.",
+        body: [
+          "The tell: an unexplained acronym or tool name dropped into an answer with no plain-language gloss attached, assuming the listener will just follow along.",
+          "The move: 1 short technical reason, immediately followed by the business consequence, in the same breath. 'We used a managed identity instead of a key, so there's no secret sitting in the code that could leak.'",
+          "If a term has to be used (PSI, gRPC, whatever), attach its plain-language meaning the first time it's said, in the same sentence, not as a footnote after.",
+          "A good check while prepping: read the answer out loud to someone outside engineering. Anywhere they visibly lose the thread is the exact spot that needs a plainer rewrite.",
+        ],
+        whyItMatters:
+          "A product leader evaluates communication as its own skill, not a nice-to-have next to the technical answer. An answer that only a fellow engineer could follow fails this test regardless of how correct it is.",
+        estimatedHours: 2,
+      },
+      {
+        id: "experimentation-rigor-reflex",
+        name: "Talk Like Someone Who's Actually Run Experiments",
+        hook: "What's being tested: whether the module 7 vocabulary is a reflex or something memorized for this interview specifically.",
+        body: [
+          "The tell: only mentioning a guardrail metric, sample size, or peeking risk when the interviewer directly asks about experimental validity.",
+          "The move: in any question shaped like a rollout or a comparison between 2 approaches, name the guardrail metric unprompted, before being asked. 'And the guardrail on that would be default rate, since approval rate alone could look great while quietly getting worse there.'",
+          "Reuse the exact vocabulary already built out: champion and challenger, underpowered test, peeking, pre-registered metric. This person built an A/B testing framework themselves and will recognize precise vocabulary immediately.",
+          "If a rollout question doesn't obviously call for an experiment, say so, and say why. Correctly identifying when a full experiment isn't warranted is itself a sign of real judgment, not just pattern-matching every question to 'run an A/B test.'",
+        ],
+        whyItMatters:
+          "This is the 1 area of the whole interview where the interviewer is the deepest expert in the room. Fluent, unprompted use of this vocabulary is the highest-leverage signal available in this specific conversation.",
+        estimatedHours: 2,
+      },
+      {
+        id: "ambiguity-and-ownership",
+        name: "Handle Ambiguity Without Waiting to Be Told What to Do",
+        hook: "What's being tested: whether the first move under a vague, high-pressure prompt is to triage and act, or to wait for more direction.",
+        body: [
+          "The tell: an answer that jumps straight to a conclusion ('it was probably drift') with no visible ordering of what got checked first and why.",
+          "The move: state the first concrete check and the reason it's first, before naming any conclusion. 'The first thing I'd pull is this week's feature distributions against the training baseline, since that's the cheapest check and the most common cause.'",
+          "This mirrors the 4-way diagnosis order this curriculum already builds (data drift, then skew, then config, then feedback contamination), cheapest and most likely first, not the most technically interesting first.",
+          "Close with what you'd report and to whom, before the full root cause is even confirmed. Ownership under ambiguity includes keeping people informed early, not going quiet until there's a complete answer.",
+        ],
+        whyItMatters:
+          "A senior product leader needs to trust that a report of 'something's wrong' turns into a triaged, moving investigation without their own direct involvement in every step. This is the answer that builds that trust.",
+        estimatedHours: 2,
+      },
+    ],
+  },
 ];
