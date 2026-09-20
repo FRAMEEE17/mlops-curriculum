@@ -23,7 +23,7 @@ export default function RootLayout({
               {curriculumName}
             </Link>
             <span className="text-xs text-[var(--text-muted)]">
-              11 modules · 52 write-ups
+              12 modules · 59 write-ups
             </span>
           </div>
         </header>

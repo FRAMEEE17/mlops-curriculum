@@ -1078,4 +1078,123 @@ export const modules: Module[] = [
       },
     ],
   },
+  {
+    id: "deep-dive-ready",
+    name: "Deep-Dive Ready: Past Projects Under Interrogation",
+    order: 12,
+    intro:
+      "A technical interviewer who's already decided you're competent stops asking what you built and starts asking why. Why this tool, did you try anything else, what broke, how did you actually learn the part you didn't know. This module rebuilds 4 real past projects against exactly that kind of questioning, and builds the connective tissue (a design-doc habit, a reusable tool-choice answer, a reusable learning-method answer) that carries across all of them.",
+    concepts: [
+      {
+        id: "design-doc-defense",
+        name: "Writing a Design Doc You Can Defend Live",
+        hook: "A design doc that only lists the winning option falls apart the moment someone asks what else you considered.",
+        body: [
+          "A design doc worth writing has 5 parts, in order: the actual problem (not the solution, the problem), the hard constraints that any solution has to respect, the options that were genuinely considered, the decision, and the tradeoff accepted by picking it. Skipping the third part is the single most common gap, and it's exactly the part an interviewer asks about first.",
+          "Write down the rejected options while they're still fresh, even in 1 clause each. 'Considered X, ruled out because Y' takes 10 seconds to write and saves a live interview from the worst version of this question: staring blank at 'did you consider anything else' because the honest answer got lost the moment the decision was made.",
+          "State the constraint that actually decided the outcome, not a feature comparison. 'We needed a typed contract between 2 services calling each other constantly, and a schema-less format would've pushed that validation into application code on both sides' explains a decision. A table of pros and cons with no constraint attached explains nothing, because almost any tool wins on some row of that table.",
+          "Name the tradeoff you accepted, every time, even when the decision was clearly right. Every real design decision costs something. Saying what it costs, out loud, is what separates an engineer who understands the decision from someone repeating the conclusion they were told to reach.",
+          "Under live interrogation, the shape to fall back on for any 'why this and not X' question is always the same: state the constraint, state what X would have cost against that specific constraint, state what was accepted by not choosing X. That 3-part shape works whether the follow-up is about a database, a framework, or a protocol.",
+        ],
+        whyItMatters:
+          "Every project deep-dive concept in this module gets defended using exactly this shape. The framework is what's reusable, not any single answer.",
+        estimatedHours: 3,
+      },
+      {
+        id: "deep-dive-streaming-receiver",
+        name: "Deep-Dive: A Go Event-Receiver Service, From Zero Go Experience",
+        hook: "'Why gRPC and not WebSocket' has a real answer once you name what each one is actually for.",
+        body: [
+          "The project: a service that receives streamed transaction events and processes them close to real time, built in Go, during an internship, with no prior Go experience going in.",
+          "Near-real-time versus batch is a definition worth stating precisely instead of gesturing at: a latency bound on 1 event, from the moment it happens to the moment it's processed, typically measured in seconds. Batch has no such bound on an individual record, it processes a bounded collection on a schedule (every 5 minutes, every hour) and doesn't care how old any 1 row inside that batch is. The system in question read events as they arrived and processed each one within a small, bounded window, which is what near-real-time means here, concretely, not as a buzzword.",
+          "Why gRPC over plain HTTP for service-to-service calls: a typed contract (protobuf) that both sides generate code from, so a field rename or type change fails at compile time on both services instead of at runtime in production. Plain HTTP with a JSON body has no such contract unless you bolt 1 on separately, and that contract can drift between services without either side noticing until a request actually breaks.",
+          "Why not WebSocket: WebSocket solves a different problem, a long-lived, bidirectional connection where either side can push at any time, the shape you want for something like live chat or a live dashboard. This was event ingestion, 1 direction, request-response or fire-and-forget, not a conversation. Reaching for WebSocket here would add persistent-connection management (reconnect logic, keepalives) to solve a problem that request-response already solves more simply.",
+          "Why not GraphQL: GraphQL solves flexible, client-driven queries, letting a caller ask for exactly the fields it needs across a graph of resources. This was a fixed, internal contract between 2 known services, not a queryable API serving many different, unpredictable clients. GraphQL here would add a query layer on top of a contract that never needed query flexibility in the first place.",
+          "How the Go gap actually got closed: not by reading a language reference cover to cover. The team had an existing service template with a working HTTP and gRPC service already scaffolded in it. The starting move was tracing 1 real request through that template end to end, from the entry point to the response, before changing a single line, which turned 'I don't know Go' into 'I don't know Go, but I can see exactly where this specific thing needs to change,' a much smaller and much more honest gap to close.",
+          "The onboarding structure this happened inside is itself worth being able to describe cleanly: engineering split into software, infrastructure, data engineering, and BI, work organized in sprints, onboarding tracked as tickets covering the event-messaging system in use and how to request infrastructure access, paired with a daily standup with the immediate team, a weekly 1:1 that doubled as a code review with a mentor, and a monthly sync with the team lead. That structure is what made 'ask when blocked, but come with a specific question, not a vague one' actually workable as a junior engineer.",
+        ],
+        whyItMatters:
+          "This is the project most likely to draw a protocol-choice follow-up question, since it's a genuine 3-way decision (gRPC, WebSocket, GraphQL, HTTP) with a real, statable reason for each rejection, not a 1-tool default.",
+        estimatedHours: 5,
+      },
+      {
+        id: "deep-dive-contract-intel",
+        name: "Deep-Dive: Measuring Hallucination Instead of Trusting an Answer",
+        hook: "'The RAG system works well' is a claim. '25.3% down to 15.3%, on a paired bootstrap test with a confidence interval that doesn't cross zero' is evidence.",
+        body: [
+          "The project: a retrieval-augmented system answering questions about legal contracts, built independently, where a wrong or invented answer is worse than no answer at all, since someone downstream acts on it.",
+          "Why measure hallucination as a specific number instead of trusting that grounding the model in retrieved text is enough: grounding reduces the problem, it doesn't solve it, and 'we ground it in the source text' is exactly the kind of claim that sounds safe and turns out not to be, unless it's actually checked against real questions with a known answer.",
+          "The actual measurement: 150 questions from a public legal-contract benchmark, 3 separate models voting as judges against the source text, comparing before and after a prompt and model change. The headline number, hallucination rate from 25.3% to 15.3%, only means something because it's paired with a statistical test (a bootstrap over the same questions and the same judges) confirming a 95% confidence interval that stays on 1 side of zero, meaning the improvement is real and not sampling noise.",
+          "Why the check runs in CI and blocks a merge, not as a report someone reads afterward: a check that exists but that nobody has to pass doesn't actually prevent a regression, it just documents one after it already shipped. Wiring the same evaluation into the build means a code change that quietly makes answers worse fails the same way a broken test fails, before it reaches anyone.",
+          "Why the core logic never imports a vendor SDK directly (a ports-and-adapters split, 1 file wiring in the real tools, everything else talking only to a plain interface): it's what let a free local model stand in during development while the production path used a real cloud model, without touching the actual answering logic to make that swap. The tradeoff accepted for that flexibility is 1 extra layer of indirection that a simpler, tightly-coupled version wouldn't have.",
+          "Why managed identity instead of an API key for the cloud services: an API key is a secret that can leak (in a repo, in a log, in a config file) and has to be rotated on a schedule whether anything went wrong or not. A managed identity is an authentication method tied to where the code is actually running, with nothing secret stored anywhere in the code or its configuration, and 1 secret left over (in a key vault) instead of several scattered through settings files.",
+        ],
+        whyItMatters:
+          "This project answers the hardest version of 'how do you know it works': not with a demo, with a specific number, a specific statistical test behind that number, and an automated gate that keeps the number from silently getting worse.",
+        estimatedHours: 5,
+      },
+      {
+        id: "deep-dive-research-agent-training",
+        name: "Deep-Dive: A Multi-Agent Research Pipeline and Distributed Training",
+        hook: "'Managed distributed training on Slurm' sounds like a resume line until you can say what it actually meant to submit and monitor those jobs.",
+        body: [
+          "The project: an internal research agent that answers open-ended questions by searching, reading, and synthesizing across sources, built with a graph-based multi-agent framework and a persistent-memory server, alongside a separate distributed training and inference-benchmarking workstream on an HPC cluster.",
+          "What a persistent-memory layer actually adds over a stateless agent: without it, every session re-derives the same lookups it already did last time, since nothing carries over between runs. With it, a prior finding is stored once and retrieved on a later, related query instead of re-searched from scratch. That's the concrete mechanism behind a claim like reduced manual retrieval time: fewer repeated searches for information the system, or the person using it, already found before.",
+          "Why a multi-agent graph over a single long chain of prompts: each node in the graph is a separately traceable, separately retryable step (search, read, synthesize, verify), so a failure or a bad result at 1 step doesn't require redoing the whole pipeline, and it's possible to see exactly which step produced a bad output instead of debugging 1 long, opaque chain of reasoning.",
+          "What 'managed distributed training jobs in a Slurm HPC environment' concretely means, worth being able to unpack past the resume phrase: a training run configured to shard optimizer state and model state across multiple GPUs (a ZeRO-stage-3 style configuration) so a model too large for 1 GPU's memory can still train, submitted as a job to a cluster scheduler that allocates the actual GPU nodes and queues the job against everyone else's, monitored through the scheduler's own job status and logs rather than watching a single terminal.",
+          "The separate intent-classification piece: a smaller, supervised model trained to route a user's message to the right downstream handling, evaluated directly against a held-out accuracy number, the same evaluation discipline as everywhere else in this curriculum (a benchmark, a real measured before-and-after, not a felt improvement).",
+          "Bridging this into an MLOps answer specifically, since the CV bullets here read AI-engineer-flavored and a lending-focused interviewer will ask exactly that: name what serving this in production would need that training didn't. A pinned, versioned model artifact rather than a loose checkpoint. An inference server built for batching (vLLM or similar) instead of a training script repurposed for serving. Monitoring for the same drift concepts this curriculum covers elsewhere (module 8), since an intent classifier trained on 1 snapshot of real user messages is exactly as exposed to data drift as a credit model is. Being able to draw that line, training experience on 1 side and the serving discipline this role actually owns on the other, is the answer to 'this is research work, how does it relate to what we're hiring for.'",
+        ],
+        whyItMatters:
+          "This project is the furthest from the lending-MLOps core of this curriculum, so it's the 1 most likely to get 'how is this relevant to us' as a direct question. The bridge, training versus serving, is the answer, and it only works if the interviewer can hear that the training and infra vocabulary is real, not memorized from the CV bullet itself.",
+        estimatedHours: 5,
+      },
+      {
+        id: "why-this-tool-interrogation",
+        name: "The 'Why This Tool' Interrogation, as a Reusable Pattern",
+        hook: "The question repeats across every project. The answer shape should too.",
+        body: [
+          "Every 1 of the 4 projects in this module has a real tool-choice decision behind it, and every 1 answers to the same 3-clause shape from the design-doc concept: the constraint, what the rejected option would have cost against that constraint, what got accepted by not choosing it.",
+          "gRPC over WebSocket or GraphQL: the constraint was a fixed, internal, request-response contract between 2 known services. WebSocket would have added persistent-connection management for a bidirectional-push problem that didn't exist. GraphQL would have added a flexible query layer for a fixed contract that never needed query flexibility. Accepted cost: a slightly heavier setup (codegen from protobuf) than plain, untyped HTTP.",
+          "A multi-agent graph over a single hand-written chain, or a framework over building it from scratch: the constraint was needing to trace and retry individual steps independently once the system had more than 1 agent talking to more than 1 other agent. A hand-rolled chain would have meant building that tracing and retry logic manually, on top of already reduced flexibility for adding more agents later. Accepted cost: an abstraction layer, and a real learning curve to actually understand what it's doing underneath, not just call it.",
+          "Ports and adapters over calling a cloud SDK directly: the constraint was needing to swap a free local model in during development without touching the answering logic itself. Calling the SDK directly would have meant that logic and infrastructure code were the same code, cheap to write once, expensive to change later. Accepted cost: 1 extra layer of indirection for a project that, at a smaller scale, might not have needed it.",
+          "Managed identity over an API key: the constraint was removing an entire class of leak risk (a key committed by accident, a key in a log) rather than managing that risk through rotation discipline. Accepted cost: more upfront setup wiring identity and role permissions correctly, versus just pasting a key into a config file.",
+          "The pattern to walk into any interview with: pick the constraint first, out loud, before naming the tool at all. 'Given that we needed X, the tool that fit was Y' reads as reasoning. 'We used Y because it's good' reads as a tool preference with no reasoning attached, and that's exactly the answer that invites the next 'why' question instead of closing it.",
+        ],
+        whyItMatters:
+          "An interviewer asking 'why this tool' 4 different times across 4 different projects is testing whether there's 1 real process behind every answer, or 4 different memorized justifications. Having 1 reusable shape is what makes the answers read as the same person reasoning, not 4 unrelated scripts.",
+        estimatedHours: 3,
+      },
+      {
+        id: "learned-it-without-naming-the-tool",
+        name: "Answering 'How Did You Learn This' Across Every Project, the Same Way",
+        hook: "The answer that holds up under follow-up questions is never about which tool supplied the first explanation. It's about what got checked before that explanation got trusted.",
+        body: [
+          "This generalizes a pattern this curriculum already builds once, for the accounting-domain question specifically: the interesting part of learning something unfamiliar was never where the first-pass explanation came from. It was what got done with that explanation before it shaped a single real decision.",
+          "For the Go service: the first pass was the team's own existing template, not a tutorial or an external source. What made it real learning was tracing 1 actual request through it end to end before writing anything new, so every later change was checked against a working example, not against a guess at how Go conventions were supposed to work.",
+          "For the RAG hallucination work: the first pass at understanding evaluation methodology came from reading how the field measures this kind of thing, and what made it real was building a benchmark against a public, checkable dataset and a statistical test, so the claim of improvement didn't rest on 1 person's judgment that answers looked better.",
+          "For the distributed-training work: the first pass at understanding a sharded training configuration came from the framework's own documentation and existing example configs, and what made it real was running it on a real job, watching whether GPU memory usage matched what the configuration claimed it should, and adjusting from an observed number, not a predicted one.",
+          "The consistent shape across all 3: name the domain gap honestly and specifically, name the first source used to close it without dwelling on it, and spend the rest of the answer on what got verified, against what, before that source's explanation got trusted enough to act on. That last part is the actual skill being asked about, every time this question comes up, regardless of which project it's attached to.",
+        ],
+        whyItMatters:
+          "This is the exact question that scored lowest in a prior real interview because it went unanswered. Having 1 rehearsed shape that generalizes across every project closes that gap permanently, instead of needing a separate memorized answer per project.",
+        estimatedHours: 3,
+      },
+      {
+        id: "collaboration-second-nature",
+        name: "Collaboration Is Second Nature: Knowing When to Lead and When to Support",
+        hook: "The skill being asked about isn't whether you can collaborate. It's whether you know, in the moment, which mode the situation actually calls for.",
+        body: [
+          "A real working cadence already demonstrates this, once it's described as a set of deliberate collaboration modes instead of just a meeting schedule: a daily standup with the immediate team (fast, tactical, surface a blocker before it costs a day), a weekly 1:1 that doubled as a code review with a mentor (slower, focused feedback on a specific piece of work, the right cadence for real skill transfer), a monthly sync with the team lead (the right altitude for scope and priority questions, wrong altitude for a daily blocker). 3 different problems, 3 different collaboration modes, on purpose.",
+          "A simple, statable rule of thumb for when to ask versus when to decide and inform versus when to bring a decision to someone before making it: blocked by something genuinely outside current knowledge, ask, and ask with a specific question, not a vague one. A decision inside your own scope with a cheap, reversible cost, decide and inform after the fact, since looping someone in on every small, reversible call wastes their time more than it helps. A decision that changes what a teammate is already depending on, bring it to them before deciding, not after, since that's the 1 category where being fast and being unilateral cost more than they save.",
+          "Leading doesn't require a title. It shows up as being the person who names the tradeoff out loud in a discussion that's circling, or the person who writes the 1-paragraph summary after a meeting so the decision doesn't get relitigated a week later from memory. Both are genuinely leadership actions, and both are easy to undersell as 'just something I did' instead of naming them directly when the question is asked.",
+          "Supporting doesn't mean passive. Reviewing a teammate's code closely enough to catch a real issue, not just enough to approve it, is a form of leadership aimed at the work rather than at the room. Naming that distinction, that support and leadership aren't opposites, 1 is aimed at people and the other at the work, and both matter, is a stronger answer than defaulting to 'I'm a team player.'",
+          "The failure mode worth naming and avoiding out loud: defaulting to whichever mode is more comfortable regardless of what the situation calls for. Always asking reads as lacking judgment. Always deciding alone reads as not actually collaborative. The trait being tested is the switch itself, not a fixed preference for either side of it.",
+        ],
+        whyItMatters:
+          "This directly answers a stated interview value: knowing when to collaborate and when to lead. A concrete, already-real working structure, described honestly as a set of deliberate modes rather than a generic 'I communicate well,' is what makes this answer land as observed behavior instead of a personality claim.",
+        estimatedHours: 3,
+      },
+    ],
+  },
 ];
