@@ -501,21 +501,6 @@ export const modules: Module[] = [
           "'We call a model and use its score' undersells what a real credit decision actually requires. Naming the orchestration layer, the external-data failure modes, and the policy-rule separation explicitly is what a product-side interviewer who's actually built 1 of these will be listening for.",
         estimatedHours: 6,
       },
-      {
-        id: "acquisition-vs-portfolio-models",
-        name: "Acquisition Risk and Portfolio Health Are 2 Different Models",
-        hook: "'Will we approve this new applicant' and 'is this existing borrower's risk changing' sound like the same question. They're not, and conflating them is a real mistake.",
-        body: [
-          "An acquisition model answers a question about someone the business has never lent to: given an application and whatever external data is available, what's the probability they default if approved. It's evaluated at 1 point in time, at the moment of the decision, and it has to work with comparatively thin data, since a new applicant has no repayment history with this lender yet.",
-          "A portfolio model answers a different question about an existing borrower: given how their account has actually behaved since origination (payment history, utilization, any recent stress signals), has their risk profile changed since they were first approved. It has much richer behavioral data to work with, and it's evaluated continuously, not just once.",
-          "The actions each model actually drives are different too, which is why treating them as 1 problem is a real design mistake, not just a labeling nitpick. An acquisition model's output feeds an approve/decline/price decision at origination. A portfolio model's output feeds ongoing account management: adjusting a credit limit up or down, flagging an account for proactive outreach before it becomes delinquent, or feeding into the collections propensity work covered earlier in this module.",
-          "The label definitions differ too, and this is the detail worth being precise about in an interview. An acquisition model's label is usually a fixed-horizon outcome (did this account default within its first 12 or 24 months). A portfolio model often needs a rolling or time-varying label, since the question isn't 1 fixed outcome, it's whether risk is trending up right now, on an account that might be 3 years into its life.",
-          "Practically, this means 2 separate model families, 2 separate evaluation setups, and 2 separate retraining cadences, not 1 model serving both purposes. An acquisition model needs fresh applicant and market data to stay calibrated as the applicant population shifts. A portfolio model needs fresh behavioral data on the existing book, and it's the 1 more exposed to the concept-drift scenario module 8 covers (a macroeconomic shift changing what a given behavior pattern actually predicts), since it's watching the same borrowers over time as the world underneath them changes.",
-        ],
-        whyItMatters:
-          "This distinction is exactly what a product leader running both acquisition and portfolio work will expect a strong candidate to draw cleanly, unprompted. Naming the different labels, different time horizons, and different downstream actions is the difference between sounding like someone who's built 1 of these and someone repeating a term from a job description.",
-        estimatedHours: 5,
-      },
     ],
   },
   {
