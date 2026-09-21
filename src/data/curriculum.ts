@@ -443,6 +443,21 @@ export const modules: Module[] = [
         estimatedHours: 5,
       },
       {
+        id: "low-latency-feature-serving",
+        name: "The Mental Model for Serving Features Fast, at Scale",
+        hook: "Low-latency engineering isn't a trick. It's counting hops, and putting data as close to the compute that needs it as physically possible.",
+        body: [
+          "Every extra network call a scoring request makes adds real, physical latency, not a rounding error. A feature lookup served from a data store in a different region than the compute calling it pays a meaningful latency tax on every single request, purely from distance, before any actual computation happens.",
+          "The mental model worth internalizing: latency budget is a resource that gets divided across every hop in the request path, not a single number you hit or miss at the end. If the whole request has a couple hundred milliseconds to work with, and 1 feature lookup alone eats half of that on network time, everything downstream of it (the rest of the feature lookups, the model inference itself, assembling the response) is now fighting over what's left.",
+          "The practical fix used broadly in low-latency systems: replicate the data closer to where it's read, not just where it's written. A feature store's online serving layer typically exists specifically because a data warehouse optimized for large batch queries and a key-value store optimized for single-record lookups under a few milliseconds are different tools solving different problems, and serving live traffic from the batch-optimized one is a common, avoidable latency mistake.",
+          "Replication for latency and replication for reliability solve 2 different problems but often get bundled into 1 decision, worth separating explicitly: replicating a feature store closer to compute cuts latency. Replicating it across multiple copies also means 1 replica failing doesn't take serving down. Design for both reasons on purpose, not as a side effect of only solving 1 of them.",
+          "The tradeoff that comes with replication and worth naming out loud in a design discussion: a replicated store usually can't offer instant, perfectly synchronized consistency across every copy without giving back the latency win in the first place. For most behavioral features (a running average, a recent transaction count), a replica lagging by a few seconds is a completely acceptable cost for a large latency win. Naming that as a deliberate tradeoff, not an oversight, is what a strong answer sounds like.",
+        ],
+        whyItMatters:
+          "This is the reasoning behind why a feature store has a separate low-latency online path at all, distinct from the warehouse it trains against. It's also the direct mechanism behind module 6's autoscaling-latency-sla concept: the model's own inference speed is only 1 piece of the real end-to-end latency budget.",
+        estimatedHours: 5,
+      },
+      {
         id: "data-model-versioning",
         name: "Version Data, Features, and Model Together",
         hook: "1 deployed model version should point to exactly 1 training snapshot. No exceptions.",
@@ -451,6 +466,10 @@ export const modules: Module[] = [
           "Identify the model exactly, with a hash.",
           "A lending product requires this traceability. When a regulator or an internal audit asks why a specific applicant was denied, 'we're not sure which model version was live that day' is not an acceptable answer.",
           "A model registry (MLflow, a cloud provider's model registry, or a homegrown equivalent) tied to a data-versioning tool (DVC or a warehouse snapshot ID) is what makes that answer possible instead of a guess.",
+          "A model registry, defined plainly: a catalog of trained model artifacts, each with a version number, the metrics it scored on evaluation, which environment it's deployed to (staging, production), and a pointer back to the exact training run that produced it. It's the difference between 'a folder of pickle files someone remembers the history of' and a system that can answer 'what's live right now, and what did we replace it with, and when' without asking a person.",
+          "Lineage is the broader relative of versioning: not just naming a version, but being able to trace the full path a prediction took to exist, which raw data fed which feature computation, which feature values fed which training run, which training run produced which model, which model produced this specific prediction. Versioning names each link in that chain. Lineage is being able to walk the whole chain, in either direction, from any single point in it.",
+          "2 ways lineage actually gets captured in practice, and they're complementary, not competing. Automatic tracking, instrumenting the pipeline itself so every component logs its own inputs and outputs as a side effect of running, with no extra effort required from whoever's writing the model code that day. Manual or custom tracking, deliberately logging specific business-relevant metadata (which experiment this run belonged to, which ticket requested it, a human-readable note on why a hyperparameter changed) that a purely automatic system has no way to infer on its own.",
+          "Rely on automatic tracking for the parts that must never be missing (which exact data and code produced which exact artifact, since an audit can't wait for someone to remember to log it by hand) and use manual tracking for the parts that add real interpretive value later (why a decision was made, not just what happened). A lineage system built only on manual logging has gaps wherever someone forgot. A lineage system built only on automatic tracking answers what happened but never why.",
         ],
         whyItMatters:
           "Model and data versioning policy is a named responsibility in most MLOps roles at a regulated fintech. In lending, versioning is a compliance requirement.",
@@ -565,6 +584,20 @@ export const modules: Module[] = [
         whyItMatters:
           "This is the single biggest difference between 'deploy a model' in a generic MLOps role and in a lending one. Expect a case-study question shaped exactly like this.",
         estimatedHours: 7,
+      },
+      {
+        id: "no-silver-bullet-deployment",
+        name: "There's No Universal Answer for When and How to Deploy a Model",
+        hook: "2 systems inside the same company can need completely different deployment strategies, for reasons that have nothing to do with either model's accuracy.",
+        body: [
+          "How quickly a model needs to move from trained to live, and how it gets there, depends on factors specific to that system: how fast new data arrives, how long the model takes to train, what the user actually notices if a prediction is stale, and what it costs the business if a bad prediction slips through. There's no 1 deployment playbook that fits every model.",
+          "A real, well-known illustration of this: a search-advertising system and a publisher-ad system built by the same engineering organization can carry wildly different latency requirements, purely because of what each product actually promises the user. If speed itself is the product's core promise, ads served alongside search results can't add any noticeable delay at all. A different ad product, serving contextual ads inside someone else's slower-rendering web page, can afford to run measurably slower, since it only needs to keep pace with a page that's already rendering slowly on its own. Same company, same broad problem (serve an ad fast), 2 different real latency budgets, because the product promise underneath each one is different.",
+          "Translate that into lending: a point-of-sale credit decision at checkout has a latency budget measured in a couple hundred milliseconds, because a customer is standing there. A portfolio risk model re-scoring the existing loan book overnight has a latency budget measured in hours, because nobody's waiting on any single prediction. Deploying both the same way (say, both behind a low-latency autoscaled endpoint) would be over-engineering the batch model and under-engineering nothing, just wasted infrastructure spend solving a problem the batch case never had.",
+          "The practical move in an interview or a design review: before proposing a deployment architecture, name the specific latency budget, the specific data freshness requirement, and the specific cost of a bad prediction slipping through, for this model, not model deployment in general. Those 3 answers alone usually make the right architecture obvious, and they're also exactly what an interviewer is checking for when they ask 'how would you deploy this.'",
+        ],
+        whyItMatters:
+          "'It depends' sounds like a dodge unless it's followed immediately by the specific factors it depends on. Naming latency budget, freshness requirement, and error cost explicitly is what turns a vague non-answer into a structured 1.",
+        estimatedHours: 4,
       },
     ],
   },
@@ -705,6 +738,21 @@ export const modules: Module[] = [
       "This is usually the module a lending MLOps role cares about most: diagnosing skew, and being on call when a live credit model misbehaves.",
     concepts: [
       {
+        id: "generalization-gap-vs-drift",
+        name: "2 Different Reasons a Model Disappoints in Production",
+        hook: "A model that scored well on the test set and then falls apart in production has 1 of 2 unrelated problems: it never actually generalized, or it did, and the world underneath it moved.",
+        body: [
+          "The first reason is a static problem, decided before the model ever shipped: it overfit. It memorized patterns specific to its training data (including its held-out test set, if that same test set got reused across too many rounds of tuning) rather than learning a pattern that holds on genuinely new data. This is a modeling and validation problem, and it's present from day 1, whether or not the world ever changes at all.",
+          "A useful gut-check worth carrying into any model review: seeing 100% accuracy, or perfect performance on any single metric, is a reason to get suspicious, not celebrate. It's usually a sign of overfitting, label leakage (a feature that accidentally encodes the answer), or a bug in how the evaluation itself was set up, not evidence of a great model.",
+          "The second reason is a temporal problem: the model genuinely generalized well at launch, and then the population of live requests it's serving evolved away from the population it was trained on. New user segments show up, an upstream process changes, a macroeconomic shift alters real-world behavior. This is drift, covered in depth in the next concept, and no amount of re-checking the original training methodology fixes it, because the training methodology was never the problem.",
+          "The practical difference matters because the fix for each is completely different, and applying the wrong 1 wastes a retrain cycle. If the problem is overfitting, the fix is in modeling and validation discipline (a cleaner train and test split, regularization, more genuinely diverse training data), not retraining more often on the same flawed setup. If the problem is drift, the fix is refreshing what data the model sees, not redesigning the model architecture.",
+          "Both problems can show up at once and get confused for each other in a review. The differentiating question: did this model ever perform well on genuinely fresh data, even close to launch? If no, look hard at overfitting first. If yes, and performance degraded gradually or suddenly sometime after launch, look at drift first.",
+        ],
+        whyItMatters:
+          "This is the framing question underneath 'why does my model perform worse in production than in testing,' 1 of the most commonly asked debugging questions in an MLOps interview. Naming which of the 2 problems it is, before jumping to a fix, is what a strong answer sounds like.",
+        estimatedHours: 5,
+      },
+      {
         id: "drift-taxonomy",
         name: "Data Drift vs Concept Drift vs Training/Serving Skew",
         hook: "3 different bugs produce the same symptom (metric drops). Naming the right one decides the fix.",
@@ -818,6 +866,8 @@ export const modules: Module[] = [
           "A Prometheus and Grafana stack (with Loki for logs, Tempo for traces) covers latency, error rate, and uptime out of the box and provides a solid operational baseline.",
           "None of that tells you the model's input distribution has drifted.",
           "Operational observability and skew observability are 2 different dashboards, built from 2 different data sources (request metrics versus feature-value snapshots). A team that only builds the first one will still get blindsided by the second failure mode.",
+          "If unsure what belongs on a first dashboard at all, the 4 golden signals from Google's own SRE practice are the right starting set for any request-serving system, a scoring endpoint included: latency (split into successful versus failed requests, since a fast error and a slow success tell 2 different stories), traffic (requests per second), errors (the rate of requests failing, explicitly or implicitly, like a 200 response with the wrong content), and saturation, how full the service's most constrained resource actually is (a queue, a connection pool, GPU memory), since that's the number that tells you how much headroom is left before things get worse.",
+          "Latency specifically deserves more than an average. Watching only the mean latency hides a long tail, a small share of requests taking far longer than the rest, and for a service with many callers even a rare slow outlier gets hit by somebody constantly. Track p50, p95, and p99 separately, and expect to care most about the tail, not the middle.",
         ],
         whyItMatters:
           "This is the instrumentation layer that makes the skew-diagnosis and incident-response concepts in this module possible.",
