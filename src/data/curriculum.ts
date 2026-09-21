@@ -302,6 +302,22 @@ export const modules: Module[] = [
         }],
       },
       {
+        id: "pipeline-execution-guarantees",
+        name: "What Happens When a Scheduled Job Runs Twice, or Doesn't Run at All",
+        hook: "A batch pipeline that assumes it always runs exactly once, exactly on schedule, is 1 network blip away from either double-processing a period or silently skipping it.",
+        body: [
+          "A scheduled job (a nightly retrain, an hourly feature computation) will, over a long enough time, run more than once for the same scheduled slot, whether from a retry after a timeout, an overlapping run that started before the last 1 finished, or a worker that got replaced mid-job and a replacement picked up the same work. Designing for that possibility up front is much cheaper than discovering it in production.",
+          "Idempotency is what makes duplicate execution safe: re-running the exact same job for the exact same period produces the exact same result, with no double-counted rows and no duplicated side effect. The practical version of this for a batch job: have every run compute a stable, deterministic output key from its inputs (the period it's processing, not a random run ID), and make the write step an overwrite or an upsert keyed on that, not a blind append. An append-only write is the most common way idempotency quietly breaks.",
+          "A worker lease is the mechanism that prevents a subtler version of the same problem: 2 workers both believing they own the same unit of work at the same time, both writing a result. A lease is a time-bounded claim on a specific piece of work, renewed while the worker's still alive and actively processing, and released or expired if the worker goes silent, so a replacement worker can safely pick up the same work only once the original lease has genuinely expired, not the moment it stops responding.",
+          "Checkpointing what's already been completed, not just what's in progress, is what makes a long batch job's failure recoverable without redoing everything. A job processing a week of data in daily chunks that crashes on day 5 should resume at day 5, not day 1, and that only works if completed chunks are recorded durably as they finish, not inferred after the fact from whatever partial output happens to exist.",
+          "Stragglers, the small share of work units that take dramatically longer than the rest for reasons unrelated to the job itself (a slow shard, a noisy neighbor on shared infrastructure), are worth planning for explicitly rather than just waiting them out. A common mitigation is running a backup copy of a straggling unit of work on a different worker and taking whichever finishes first, rather than letting the whole job's completion time be dictated by its single slowest piece.",
+          "Finally, deliberately staggering when scheduled jobs actually kick off (not every hourly job starting exactly on the hour) avoids a self-inflicted load spike where a fleet of unrelated jobs all compete for the same shared resources at the same synchronized moment, a failure mode that's entirely avoidable and has nothing to do with any individual job's own logic.",
+        ],
+        whyItMatters:
+          "'Implement and support data pipelines' sounds simple until a scheduled job runs twice during a network blip and nobody notices for a week. Idempotent writes, worker leases, checkpointing, and staggered scheduling are the concrete mechanisms behind 'the pipeline is reliable,' not just a claim to make in an interview.",
+        estimatedHours: 5,
+      },
+      {
         id: "lifecycle-build-validate",
         name: "Build, Validate, and Integrate the Model",
         hook: "A model sitting in a file isn't useful. You have to interrogate it, which means integrating it with something.",
@@ -476,6 +492,21 @@ export const modules: Module[] = [
         estimatedHours: 4,
       },
       {
+        id: "feature-lifecycle-and-data-recovery",
+        name: "Features Get Retired, Data Gets Deleted, and Versioning Has to Survive Both",
+        hook: "Versioning a feature the day it's created is the easy half. Versioning it correctly the day it changes definition, or the day a user's data legally has to be deleted, is the half that actually gets tested.",
+        body: [
+          "A feature definition changing (a new calculation, a corrected bug, a stricter input range) isn't a 1-time event, it's a coordination problem across everything that already depends on the old definition. The old version needs a clear end date, any historical training data computed under the old definition needs to stay honestly labeled as such (not silently reinterpreted under the new definition), and the old extraction job needs to actually get retired, not just quietly stop being used while it keeps running in the background.",
+          "Retiring a feature well means retiring 3 things together, not just 1: the extraction job that computes it, the stored historical values, and every serving-path reference to it. Leaving even 1 of those 3 behind (a serving path still reading a feature nobody's computing anymore, say) is a specific, quiet failure mode that only shows up as a confusing null downstream.",
+          "Data deletion requests (a user exercising a legal right to be forgotten, or an internal retention policy expiring) have to propagate through the same versioning system that tracks everything else, not sit outside it as a special case. That means through raw data, every feature derived from it, and every backup copy, and it means the training and evaluation story has to account for datasets that may no longer be fully reproducible once part of them has been legitimately deleted. A model retrained today may not have the exact same data available that trained last quarter's version, and that's an expected consequence of deletion working correctly, not a bug in the pipeline.",
+          "None of the versioning discipline in this module matters if a backup can't actually be restored when it's needed, and that's a claim worth verifying directly rather than assuming. A backup that's never been tested is a backup you don't actually have yet, you have an unverified belief that you have 1. Periodically and automatically restoring from backup, then checking the restored data for completeness and measuring how long the restore actually took, is what turns 'we have backups' from an assumption into a proven, timed capability.",
+          "Tie recovery time back to something concrete: how long can training or serving realistically be degraded before it's a real business problem, and does the tested restore time actually fit inside that window. A backup that technically works but takes 3 days to restore is not a real answer to an incident that needs to resolve in hours.",
+        ],
+        whyItMatters:
+          "'Implement and support data pipelines and model versioning policies' includes the unglamorous half most people skip in an interview answer: what happens when something gets retired, deleted, or lost, not just what happens when something gets created.",
+        estimatedHours: 5,
+      },
+      {
         id: "fraud-detection-product-surface",
         name: "Fraud Detection as a Product Surface, Not Just a Flag",
         hook: "A fraud model that catches everything also blocks a pile of good customers. The real product decision is where to draw that line, not whether the model is accurate.",
@@ -560,6 +591,8 @@ export const modules: Module[] = [
           "A pattern that shows up a lot in working reference implementations: a static analysis step first (SonarQube or similar), then download the freshly trained model and evaluate it against a hard metric threshold (F1, recall, whatever the business cares about).",
           "Only build and push the serving image if that threshold clears, then a security scan on the image, then deploy via Helm. Each stage can fail the pipeline outright.",
           "Be ready to sketch these gates and their order in an interview.",
+          "Below the model-quality gate sits a layered testing strategy, and naming which layer catches which failure is worth being precise about. Unit tests check 1 function or transformation in isolation, fast and narrow. Integration tests check that 2 real components actually work together (the feature pipeline and the model, say), catching contract mismatches a unit test can't see. End-to-end tests run the full path a real request takes, client through to response. Smoke tests are a fast, shallow check after a deploy that the basics work at all, meant to catch a badly broken deploy in seconds, not to replace deeper testing. Performance and stress tests intentionally push load past normal levels to find where the system actually breaks, not just confirm it works under ordinary conditions. Each layer trades coverage for speed differently, and a healthy pipeline runs the cheap, narrow ones on every commit and reserves the slow, broad ones for less frequent gates.",
+          "A model passing its quality gate on held-out data still needs a separate predeployment validity check before it's trusted to actually serve traffic, and this is a different test from accuracy. Load the candidate model into something that mimics the real serving runtime, not just a notebook, and check that it doesn't silently violate operational constraints even while scoring well: does it fit in the memory budget it's actually going to run in, does a real request through it come back inside the latency budget, does it reject rather than silently pass through a NaN or wildly out-of-range output, and does it correctly refuse an input built for a feature schema version it wasn't trained against. A model can ace every accuracy metric and still fail every 1 of these, and none of them show up in a standard evaluation report.",
         ],
         whyItMatters:
           "Automating the ML lifecycle end to end, training through deployment, is close to the core definition of the role. First implementations commonly miss the evaluation gate.",
@@ -645,6 +678,21 @@ export const modules: Module[] = [
         }],
       },
       {
+        id: "coordinated-retries-and-deadlines",
+        name: "Retries and Deadlines Across a Chain of Services",
+        hook: "Retrying a failed call feels like the safe, responsible thing to do. Uncoordinated, it's how 1 slow dependency turns into a fleet-wide outage.",
+        body: [
+          "A single retry on a single failed call is safe in isolation. The danger shows up at scale: if every service in a call chain independently retries every failure a fixed number of times, a transient slowdown at the bottom of the chain gets amplified multiplicatively as it propagates back up, each layer retrying on top of the layer below also retrying, and what should have been a brief blip turns into a self-inflicted overload.",
+          "The fix has 2 parts. First, retry at only 1 layer of a multi-hop chain, deliberately, rather than letting every layer retry independently, so 1 failure doesn't get multiplied by the number of hops it passes through. Second, use randomized exponential backoff (each retry waits longer than the last, with some randomness mixed in) rather than retrying instantly and on a fixed schedule, so a wave of clients don't all retry at the exact same moment and recreate the overload they were trying to recover from.",
+          "A per-client retry budget caps this further: rather than letting any individual failing request retry as many times as its own logic allows, track retries as a rate across an entire client (no more than, say, 10% of a client's total requests may currently be retries), and once that budget's exhausted, fail fast instead of piling on more retries. This keeps a systemic problem from silently consuming an ever-growing share of total capacity as retries.",
+          "Deadline propagation solves a related but different problem: if a request has 200 milliseconds left before its caller gives up on it entirely, every downstream call it makes should know that remaining budget, not silently apply its own default timeout. Otherwise a downstream service can happily spend 500 milliseconds computing an answer nobody upstream is still waiting for, burning real resources on work that's already been abandoned. Carrying the remaining deadline through the request, and having each hop check whether there's still enough budget left before even starting expensive work, avoids that waste.",
+          "For a training pipeline specifically, this same budgeting idea shows up differently: it's not enough to know how long detecting a problem takes, the recovery and retraining time has to be budgeted against how stale a model is allowed to get before it's genuinely unsafe to keep serving. A monitoring setup that detects an issue quickly but sits behind a retrain-and-redeploy cycle that takes days hasn't actually solved the freshness problem, just moved where the delay lives.",
+        ],
+        whyItMatters:
+          "This is the specific mechanism behind why microservice reliability doesn't compose for free just because every individual service handles failure reasonably. Naming retry amplification, backoff, and deadline propagation explicitly is what a systems-design follow-up on 'how would you make this resilient' is actually listening for.",
+        estimatedHours: 5,
+      },
+      {
         id: "internal-ml-platform",
         name: "The Platform's Job Is to Delete Toil",
         hook: "Judge a platform by how much of a data scientist's week it gives back.",
@@ -654,6 +702,8 @@ export const modules: Module[] = [
           "If they need to file a ticket with the platform team for a routine deploy, the platform has failed at its 1 job.",
           "Evaluate this work by measuring how much median time-to-production drops for a new model, before and after the platform changes.",
           "Use that metric to explain whether the platform work is succeeding.",
+          "The platform's job starts earlier than deployment, though, at feature development itself. A data scientist proposing a new feature shouldn't have to hand it to someone else just to find out whether the extraction code actually works. A platform that auto-tests proposed extraction code against sample data, runs it in a staging-like environment, and hands back both the extracted values and basic analysis (a distribution, missing-value rate) turns 'try this feature idea' into a self-serve loop instead of a ticket that sits in a queue.",
+          "A platform doesn't succeed just because it exists, it succeeds because people actually use it instead of routing around it, and that's a product problem, not just an engineering one. Treat rollout like a real product launch: pick a small set of initial users deliberately rather than announcing it to everyone at once, write onboarding material that assumes zero context, actively collect feedback in the first weeks rather than waiting for complaints, and release improvements incrementally based on what that feedback actually surfaces. A technically excellent platform that nobody adopted because the rollout was 1 announcement and no follow-up has failed at its actual job just as thoroughly as one that was never built.",
         ],
         whyItMatters:
           "Platform work is a named responsibility in most senior MLOps roles, and it's the difference between an engineer who ships 1 pipeline and one who multiplies an entire team's output.",
@@ -727,6 +777,21 @@ export const modules: Module[] = [
         whyItMatters:
           "This is the kind of nuance that separates a generic MLOps candidate from one who understands the specific domain, and it's a natural follow-up to the champion/challenger question.",
         estimatedHours: 7,
+      },
+      {
+        id: "temporal-evaluation-and-reproducibility",
+        name: "3 Evaluation Traps That Only Show Up Over Time",
+        hook: "A model can pass every test the day it's built and still be evaluated wrong, in ways that only become visible months into production.",
+        body: [
+          "A plain random train/test split quietly assumes the future looks like a random sample of the past, which is false for almost any real system, and especially false for credit risk, where the applicant population and the economy both keep moving. Temporal validation, also called backtesting, fixes this by always evaluating a model only on data that comes chronologically after what it was trained on, the same constraint a live model actually faces, never on a random split that lets it see the future while training on the past.",
+          "Applied properly, temporal validation isn't 1 train/test split, it's a rolling series of them: train on data through month N, evaluate on month N+1, then advance the window and repeat. That reveals whether performance is stable over time or quietly decaying, something a single, static split can never show, since a single split only ever reports 1 snapshot.",
+          "A separate trap: as a model gets retrained repeatedly over a model's lifetime, comparing 'this month's model' to 'last month's model' isn't enough on its own, because the evaluation set itself might be getting easier or harder over time for reasons that have nothing to do with the model. A fixed golden set, a static, held-back reference batch of examples that never changes and never gets included in any training run, is what lets you tell the difference between the model actually changing and the evaluation just getting easier or harder underneath it.",
+          "A subtler reproducibility trap, worth knowing by name: even with the exact same code and the exact same versioned data, retraining a model doesn't reliably produce identical weights. Random initialization, the order data gets shuffled into batches, and nondeterminism from parallel or concurrent parameter updates during training all introduce real variation between 2 runs that are otherwise identical on paper. Pinned dependencies and versioned data get you a reproducible training recipe, not a bit-for-bit identical model, and conflating the 2 leads to chasing a phantom bug when 2 'identical' retrains produce slightly different metrics.",
+          "The practical response to that last 1: for anything where exact reproducibility actually matters (an audit, a regulator's question, debugging a suspicious metric change), fix and log the random seed explicitly, and treat metric differences between 2 nominally identical runs as expected noise within a tolerance band, not automatically as evidence something broke.",
+        ],
+        whyItMatters:
+          "Temporal backtesting versus a random split, a golden set versus a moving evaluation target, and training nondeterminism versus a real regression are 3 separate, specific traps that a strong data-science collaborator catches before they become a false alarm or a false sense of confidence. This is exactly the kind of evaluation rigor a hiring manager who built their own experimentation framework will be listening for.",
+        estimatedHours: 6,
       },
     ],
   },
@@ -834,6 +899,21 @@ export const modules: Module[] = [
         estimatedHours: 6,
       },
       {
+        id: "prediction-outcome-reconciliation",
+        name: "Joining a Prediction to What Actually Happened, Months Later",
+        hook: "Every drift and skew check in this module runs before the real label ever shows up. Eventually it does, and reconciling it back to the original prediction is its own, easy-to-underbuild system.",
+        body: [
+          "For a loan, the true label (did they actually default) can lag the prediction by months or years. Every check covered earlier in this module (PSI, KS, chi-square, correlation shift) works entirely on features, precisely because it has to run before that label ever exists. But eventually the label does show up, and something has to join it back to the specific prediction it belongs to.",
+          "That join needs a stable identifier carried through the entire pipeline: the application ID or account ID has to survive from the original scoring request, through however many downstream systems touch it, all the way to wherever the eventual outcome (repaid, defaulted, charged off) gets recorded. If that ID gets dropped, renamed, or regenerated anywhere along the way, the join silently breaks, and nobody notices until someone tries to compute real-world accuracy and can't.",
+          "The reconciliation process itself needs monitoring, not just the join's result. Track the match rate (what fraction of predictions from N months ago have found their eventual outcome yet) and the lag distribution (how long outcomes are actually taking to arrive). A dropping match rate can mean a real pipeline break, or it can mean outcomes are legitimately taking longer to resolve lately, and those 2 explanations call for completely different responses.",
+          "Because the true label is slow, waiting for it isn't a viable monitoring strategy on its own, by the time it's available the damage from a bad model has often already been done for months. The practical fix is a validated early proxy: some earlier, faster signal that's been shown to correlate with the eventual outcome (a 30-day delinquency flag as an early proxy for eventual default, say), used as a stand-in for model-quality monitoring until the real label catches up. Periodically re-check that the proxy still actually correlates with the real outcome, since a proxy that quietly stops predicting the thing it's standing in for is worse than no proxy at all, it creates false confidence.",
+          "Black-box monitoring is a useful complement to all of this, and it's a different thing from everything else in this module. Instead of instrumenting internals (feature distributions, prediction distributions), it probes the complete, user-visible path from the outside, the way an actual caller would experience it, completely independent of what any internal metric claims. It catches the specific failure mode where every internal dashboard looks healthy but a real request, end to end, doesn't actually work.",
+        ],
+        whyItMatters:
+          "This is the piece that turns 'we monitor for drift' into a complete system: features get checked before the label exists, a validated proxy covers the gap while the label is still in transit, and the eventual real join is what confirms whether the drift checks were actually right. Skipping the reconciliation piece means never actually finding out whether the monitoring was catching the right thing.",
+        estimatedHours: 6,
+      },
+      {
         id: "fairness-explainability",
         name: "Fairness Monitoring and Explaining a Denial",
         hook: "A model that's accurate and illegal is still illegal.",
@@ -893,6 +973,21 @@ export const modules: Module[] = [
         ],
         whyItMatters:
           "Being on call for a live credit model is a named expectation in most senior MLOps roles at a lending company. This module turns everything else you've learned into a 3am decision made correctly.",
+        estimatedHours: 6,
+      },
+      {
+        id: "incident-command-and-postmortems",
+        name: "Running an Incident Like a Team, Not Like a Hero",
+        hook: "The 1st person on a page shouldn't also be the person answering Slack, paging a second engineer, and writing the timeline. That's how a 20-minute incident becomes a 2-hour one.",
+        body: [
+          "A real incident needs more than 1 role, and naming them explicitly is what keeps a bad night from getting worse. An incident commander owns the overall response and makes the final call on tradeoffs, without necessarily being the person elbow-deep in logs. Whoever's actually diagnosing and fixing focuses only on that. A separate person handles communication, keeping stakeholders updated so the responder doesn't have to context-switch every 5 minutes to answer 'any update?' For a small team this might be 2 people wearing 3 hats, but naming which hat is on at any moment still matters.",
+          "A single shared, continuously updated document for the incident (what's known, what's been tried, current hypothesis, who owns what) beats a scattered thread of Slack messages. Anyone joining mid-incident should be able to read that 1 document and get current in a minute, not scroll back through 40 messages.",
+          "For a training-side emergency, the response is genuinely different from a serving rollback, and conflating them is a real mistake. If a training job has been consuming corrupted data (a bad upstream feed, a broken feature pipeline), the fix isn't rolling back the currently-serving model, it's stopping training and promotion immediately, independent of whatever's live, quarantining the corrupted data window, and resuming only once the corruption's been isolated. Otherwise the next scheduled retrain just re-learns the same corruption and reintroduces the problem right after it looked fixed.",
+          "A blameless postmortem is a specific practice, not just 'a meeting after something breaks.' It has predefined triggers (any incident above a certain severity gets 1, automatically, not by someone remembering to schedule it), it separates contributing conditions from blame (asking what made the failure possible, not who to point at), and it produces a written, reviewed document the wider team actually reads, not just the people who were paged. The point isn't punishment, it's making the same failure structurally harder to repeat.",
+          "An error budget turns 'how reliable do we need to be' into a number you can actually act on: given an SLO (say, 99.9% of scoring requests succeed within budget), the allowed failure rate is a budget that gets spent by real incidents. Burn through it faster than planned, and that's a real, quantified signal to slow down risky releases and prioritize reliability work over new features, not a vague feeling that things have been rough lately.",
+        ],
+        whyItMatters:
+          "This is the operational maturity layer most candidates skip past with 'we'd roll back and investigate.' Naming incident roles, a training-specific stop control distinct from a serving rollback, a real blameless postmortem practice, and an error budget that actually governs release risk is what separates on-call experience from on-call vocabulary.",
         estimatedHours: 6,
       },
     ],
@@ -1194,6 +1289,8 @@ export const modules: Module[] = [
           "State the constraint that actually decided the outcome, not a feature comparison. 'We needed a typed contract between 2 services calling each other constantly, and a schema-less format would've pushed that validation into application code on both sides' explains a decision. A table of pros and cons with no constraint attached explains nothing, because almost any tool wins on some row of that table.",
           "Name the tradeoff you accepted, every time, even when the decision was clearly right. Every real design decision costs something. Saying what it costs, out loud, is what separates an engineer who understands the decision from someone repeating the conclusion they were told to reach.",
           "Under live interrogation, the shape to fall back on for any 'why this and not X' question is always the same: state the constraint, state what X would have cost against that specific constraint, state what was accepted by not choosing X. That 3-part shape works whether the follow-up is about a database, a framework, or a protocol.",
+          "1 section most design docs skip entirely, and the section a launch-review-minded interviewer will ask about directly: operational readiness. Not 'here's the architecture,' but 'here's what happens when a piece of it breaks.' A real operational-readiness section names the full dependency graph and who owns each piece, the expected load today and the realistic growth curve, what the system's actual capacity looks like when a dependency is degraded (not just at full health), the failure behavior of each individual component, and the concrete manual steps someone follows to recover if automation doesn't handle it.",
+          "That section is worth writing even for a personal project brought into an interview, in miniature: naming what you'd do if a specific dependency failed, even if it never actually did, shows the same operational instinct a reviewer is checking for on a system that's already live and serving real traffic.",
         ],
         whyItMatters:
           "Every project deep-dive concept in this module gets defended using exactly this shape. The framework is what's reusable, not any single answer.",
