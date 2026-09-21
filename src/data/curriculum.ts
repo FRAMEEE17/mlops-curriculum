@@ -14,7 +14,7 @@ export const modules: Module[] = [
     name: "Systems Foundations",
     order: 1,
     intro:
-      "The rest of this curriculum assumes you know how databases, containers, orchestrators, and streams work. This module explains those systems from the ground up.",
+      "Picture the moment a page fires at 3am: a scoring endpoint is timing out, and someone on the call says 'scale up the replicas' and 'check whether that query has an index.' If those words are just noise right now, everything else in this curriculum will be too, since deployment, monitoring, and incident response all assume this layer is already solid underneath. This module builds it from the ground up: how a database actually keeps a promise, why some queries are instant and others crawl, what a container really is versus a virtual machine, why Kubernetes exists at all, and how batch and stream processing differ as ways of moving data. Everything from module 3 onward leans on this without re-explaining it.",
     concepts: [
       {
         id: "what-a-database-promises",
@@ -182,7 +182,7 @@ export const modules: Module[] = [
     name: "Foundations You Can't Skip",
     order: 2,
     intro:
-      "You need to write Python a team can trust in production and understand the ML lifecycle end to end before working on Kubernetes or monitoring dashboards.",
+      "Picture being handed a notebook from a data scientist that scores 99% accuracy and being asked to ship it this week. Before you touch Kubernetes or a monitoring dashboard, 2 questions decide whether that's a real result or a trap: is the code itself something a team can trust in production, not just something that ran once on someone's laptop, and does that 99% number actually mean what it sounds like, or is it hiding a class imbalance, an overfit model, or a leaked label. This module is the foundation those 2 questions rest on: typed, tested Python, why accuracy lies on imbalanced data, the neural-net mechanics underneath the model you're about to deploy, and the overfitting curve that explains why a perfect training score is a warning sign, not a win.",
     concepts: [
       {
         id: "python-engineering",
@@ -257,7 +257,7 @@ export const modules: Module[] = [
     name: "The ML Lifecycle, In Depth",
     order: 3,
     intro:
-      "The lifecycle loop (data, train, build, evaluate, launch, monitor) is easy to draw and hard to run well. Each stage has its own failure modes and its own set of people involved, data scientists included. This module goes stage by stage, then covers where MLOps engineers and data scientists actually hand work to each other.",
+      "Picture a business stakeholder walking up with a problem they believe machine learning can solve. That conversation is the actual start of everything this curriculum covers, and it's a long, winding path from there to a model quietly scoring real applicants in production: someone has to decide whether the data even exists, someone has to build a training pipeline that doesn't quietly fail, someone has to decide the model is good enough to launch, and someone has to watch it after launch and catch it when it starts to go wrong. The lifecycle loop (data, train, build, evaluate, launch, monitor) is easy to draw and hard to run well. Each stage has its own failure modes and its own set of people involved, data scientists included. This module goes stage by stage, then covers where MLOps engineers and data scientists actually hand work to each other.",
     concepts: [
       {
         id: "lifecycle-data-collection",
@@ -419,7 +419,7 @@ export const modules: Module[] = [
     name: "Data & Features for Credit Risk",
     order: 4,
     intro:
-      "A credit model is only as good as the features it sees at decision time, and those features come from 2 very different places: what the applicant just told you, and what your systems already know about them.",
+      "Picture a live application coming in right now: someone's on the other end of a checkout flow, waiting on a credit decision. The model scoring that application needs 2 very different kinds of information at once, what the applicant just typed into a form, and what your own systems already quietly know about them from past behavior, and it needs both to show up as the exact same numbers they'd get if this application were being replayed offline for training. This module covers where those features actually come from, why 'streaming and batch' means something specific and checkable rather than just a diagram, what happens the day a fraud pattern shows up that nobody's modeled yet, what happens when a customer's balance goes delinquent and nobody's automated the response, and how a real decision engine combines all of that with a third party's data and a compliance team's hard rules before it ever produces an answer.",
     concepts: [
       {
         id: "batch-vs-streaming-features",
@@ -558,7 +558,7 @@ export const modules: Module[] = [
     name: "Model Deployment & Serving",
     order: 5,
     intro:
-      "Getting a model from a notebook to a live endpoint that a real applicant hits is where 'data science' ends and 'production engineering' begins.",
+      "Picture the model that just cleared every offline metric a data scientist could throw at it. It's sitting in a notebook, and someone needs to turn that into a live endpoint a real applicant's browser can actually hit, safely, without turning a routine Friday deploy into a weekend incident. This is the exact seam where 'data science' ends and 'production engineering' begins, and it's a bigger jump than it looks: the container that trained the model shouldn't be the container serving it, the pipeline needs to be able to say no to its own bad output automatically, and a credit-decision rollout can't be A/B tested the casual way a button color can, because a bad canary here means real money moving to the wrong people.",
     concepts: [
       {
         id: "packaging-serving",
@@ -639,7 +639,7 @@ export const modules: Module[] = [
     name: "Kubernetes & ML Platform",
     order: 6,
     intro:
-      "Kubernetes shows up explicitly in most MLOps postings, and interview loops for adjacent infra roles are known to ask about the control plane's working process in real depth. Be ready to explain how it works.",
+      "Picture typing `kubectl apply` on a new scoring-service deployment. Between that command and a healthy pod actually answering applicant traffic, a whole chain of components watches, decides, and reacts, mostly without talking to each other directly. Kubernetes shows up explicitly in most MLOps postings, and interview loops for adjacent infra roles are known to ask about the control plane's working process in real depth: not just 'the scheduler assigns it and the kubelet starts it,' but what happens hop by hop when a pod gets created, what happens when a node dies at 3am with nobody watching, and what an internal platform actually needs to give a data scientist so they're not filing a ticket for a routine deploy. Be ready to explain how it works.",
     concepts: [
       {
         id: "k8s-control-plane-deep",
@@ -733,7 +733,7 @@ export const modules: Module[] = [
     name: "Experimentation for Credit Decisions",
     order: 7,
     intro:
-      "Standard A/B testing assumes you can randomize freely and look at the result later. Credit decisions break that assumption in ways that matter.",
+      "Picture a new model that beats the current one on every offline metric. Before it goes anywhere near the full applicant pool, someone has to answer a harder question than 'is it better': how do you prove that, safely, on real traffic, without accidentally approving a wave of people who default or rejecting a wave who wouldn't have. Standard A/B testing assumes you can randomize freely and look at the result later. Credit decisions break that assumption in ways that matter: you can't ethically deny a random slice of real applicants just to generate a clean control group, and a bad test can cost real money in a way a worse button color never does. This module covers how the industry actually runs experiments under that constraint.",
     concepts: [
       {
         id: "champion-challenger",
@@ -800,7 +800,7 @@ export const modules: Module[] = [
     name: "Monitoring, Fairness & Incident Response",
     order: 8,
     intro:
-      "This is usually the module a lending MLOps role cares about most: diagnosing skew, and being on call when a live credit model misbehaves.",
+      "Picture a normal Tuesday. Nobody deployed anything. Then approval rate quietly drops 8 points and the first question in the incident channel is going to be 'what do we check first.' That single scenario is what this entire module prepares you for: is the model still learning the right pattern at all, or did the world underneath it move; is a preprocessing bug making training and serving see 2 different versions of the same feature; is a proxy label still actually correlated with the real, slow-to-arrive outcome; and once you're on call, how do you run the response like a coordinated team instead of a lone hero pulling logs at 3am. This is usually the module a lending MLOps role cares about most.",
     concepts: [
       {
         id: "generalization-gap-vs-drift",
