@@ -678,6 +678,22 @@ export const modules: Module[] = [
         }],
       },
       {
+        id: "batch-vs-realtime-cost",
+        name: "The Real Cost Difference Between Batch and Real-Time Serving",
+        hook: "Most candidates can explain why real-time is faster than batch. Fewer can explain what each one actually costs to run, and that's usually the harder follow-up.",
+        body: [
+          "Batch versus real-time gets treated as a pure latency question, can the answer wait or not, but there's a separate decision underneath it about resource overhead, one that shows up on an infrastructure bill every month rather than in a design diagram.",
+          "A real-time scoring endpoint pays an always-on tax. It has to keep a minimum floor of replicas warm around the clock, the same minimum-replica-floor idea from the autoscaling concept above, with model weights already loaded in memory, even during the hours nobody's applying for a loan. That idle capacity gets paid for whether or not a single request shows up.",
+          "Batch scoring only consumes compute for the window it actually runs in. And because nothing live is waiting on the other end, a failed batch job can simply retry on cheaper, preemptible compute, instances a cloud provider can reclaim on short notice at a steep discount, without anyone noticing. A real-time request serving someone mid-application can't tolerate that.",
+          "Batch also wins on raw efficiency per prediction. Scoring 50,000 applications together as 1 large batch lets a GPU or CPU reach genuinely efficient utilization. A real-time endpoint scoring 1 request at a time, or waiting a few milliseconds to fill a tiny batch before its latency budget runs out, leaves most of that same hardware idle between requests.",
+          "The actual decision isn't `batch is cheap, real-time is expensive,' it's whether the business decision genuinely has to happen the moment someone's waiting, or whether it can be computed ahead of time and read back quickly later. A point-of-sale approval has to be real-time, the applicant is standing there. A monthly credit-line review on an existing portfolio doesn't, nobody's waiting on it right now, so scoring the whole portfolio overnight on cheap compute produces the exact same model output at a fraction of the cost of keeping that model warm and waiting 24/7.",
+          "The hybrid worth naming: pre-compute a score in a batch job, cache it, and serve the cached result instantly at request time. This only works if what's being served doesn't need to reflect something that changed in the last few minutes, the same freshness tradeoff module 4's `batch-vs-streaming-features` concept covers, applied here to the deployment decision instead of the feature-computation decision.",
+        ],
+        whyItMatters:
+          "Being able to name this tradeoff unprompted, in idle-capacity and dollar terms rather than only in milliseconds, is what separates an answer about a deployment diagram from an answer about running a platform someone actually has to pay for.",
+        estimatedHours: 5,
+      },
+      {
         id: "coordinated-retries-and-deadlines",
         name: "Retries and Deadlines Across a Chain of Services",
         hook: "Retrying a failed call feels like the safe, responsible thing to do. Uncoordinated, it's how 1 slow dependency turns into a fleet-wide outage.",
