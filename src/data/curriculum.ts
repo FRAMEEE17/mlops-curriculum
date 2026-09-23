@@ -182,8 +182,24 @@ export const modules: Module[] = [
     name: "Foundations You Can't Skip",
     order: 2,
     intro:
-      "Picture being handed a notebook from a data scientist that scores 99% accuracy and being asked to ship it this week. Before you touch Kubernetes or a monitoring dashboard, 2 questions decide whether that's a real result or a trap: is the code itself something a team can trust in production, not just something that ran once on someone's laptop, and does that 99% number actually mean what it sounds like, or is it hiding a class imbalance, an overfit model, or a leaked label. This module is the foundation those 2 questions rest on: typed, tested Python, why accuracy lies on imbalanced data, the neural-net mechanics underneath the model you're about to deploy, and the overfitting curve that explains why a perfect training score is a warning sign, not a win.",
+      "Picture being handed a notebook from a data scientist that scores 99% accuracy and being asked to ship it this week. Before you touch Kubernetes or a monitoring dashboard, 2 questions decide whether that's a real result or a trap: is the code itself something a team can trust in production, not just something that ran once on someone's laptop, and does that 99% number actually mean what it sounds like, or is it hiding a class imbalance, an overfit model, or a leaked label. This module is the foundation those 2 questions rest on: the basic ML vocabulary a screening round checks first, typed and tested Python, why accuracy lies on imbalanced data, the neural-net mechanics underneath the model you're about to deploy, and the bias-variance tradeoff that explains why a perfect training score is a warning sign, not a win.",
     concepts: [
+      {
+        id: "supervised-vs-unsupervised",
+        name: "Supervised vs Unsupervised Learning, and Why the Line Matters",
+        hook: "If you can't say in 1 sentence whether a model needs labeled examples to learn from, everything past this question gets harder to explain.",
+        body: [
+          "Supervised learning trains on examples where the correct answer is already known. A historical loan application paired with whether that person actually defaulted is a labeled example, the model's whole job is learning the mapping from application details to that known outcome, so it can predict the same kind of answer for a new applicant whose outcome isn't known yet.",
+          "Unsupervised learning has no labeled answer to train against at all. Nobody tells the algorithm in advance what counts as an unusual transaction or which customers actually belong in the same group, it has to find that structure in the data on its own, by clustering similar records together or by learning what 'normal' looks like well enough to flag what doesn't fit it.",
+          "The distinction that actually decides which 1 you're doing: is there ground truth to train against. A credit-default model is supervised, the label (did they default) exists in historical data. Fraud detection is often unsupervised or semi-supervised instead, because a genuinely new fraud pattern doesn't arrive with a label attached, by definition nobody's seen it before to label it.",
+          "2 more terms worth being able to place quickly if pushed further. Semi-supervised learning trains on a small labeled set plus a much larger unlabeled 1, useful when labels are expensive or slow to get (a loan's true outcome can take months to know). Reinforcement learning doesn't use fixed labeled examples at all, it learns from a reward signal through repeated trial and error, closer to how a game-playing agent improves than how a credit model does.",
+          "Why this gets asked directly, rather than assumed: it decides the entire evaluation strategy that follows. Supervised, you can compute accuracy, precision, and recall against a known answer. Unsupervised, there's no ground truth to score against directly, so evaluation has to look completely different, checking whether clusters are stable, or checking after the fact whether an anomaly score actually lined up with confirmed fraud.",
+          "This isn't just theory, it shows up directly in production monitoring. Feature-distribution monitoring for drift is unsupervised by construction, it works precisely because it doesn't need the true label (which might not arrive for months) to detect that something in the data has changed.",
+        ],
+        whyItMatters:
+          "This is usually the first filter question in an ML screening round, and it's not really about the definition itself, it's whether you have the basic vocabulary map that the rest of the interview assumes you already have.",
+        estimatedHours: 3,
+      },
       {
         id: "python-engineering",
         name: "Typed, Tested, Packaged Python",
@@ -248,6 +264,26 @@ export const modules: Module[] = [
         ],
         whyItMatters:
           "The complexity-versus-error curve is one of the first things a technical interviewer will ask you to sketch and explain, unprompted, in a modeling round. It's also the direct justification for why every retraining gate in this curriculum (module 5's CI/CD gate) compares against a held-out set, never against training performance.",
+        estimatedHours: 5,
+      },
+      {
+        id: "bias-variance-and-regularization",
+        name: "Bias, Variance, and What Regularization Actually Does About It",
+        hook: "Bias and variance are 2 different kinds of wrong, and they need opposite fixes.",
+        body: [
+          "Total prediction error splits into 3 parts: bias, variance, and irreducible error, the noise already present in the data that no model, however good, can remove.",
+          "Bias is error from a model too simple to capture the real pattern, systematically wrong in the same direction no matter what training data it sees. A straight line fit to a genuinely curved relationship has high bias, more data won't fix it, the model's shape is just wrong for the problem.",
+          "Variance is error from a model too sensitive to the specific training data it happened to see, it would produce a meaningfully different answer if trained on a different sample drawn from the same population. A model that fits its training set almost perfectly usually has high variance, its predictions swing depending on exactly which examples it happened to train on.",
+          "This is the previous concept's complexity-versus-error curve, described from a different angle. Bias dominates the underfit side of that curve, variance dominates the overfit side, and reducing 1 usually increases the other, which is the actual tradeoff the name refers to.",
+          "Regularization is the practical tool for pulling a high-variance model back toward that sweet spot without simply throwing away its capacity to fit real signal.",
+          "L2 regularization, also called ridge or weight decay, adds a penalty proportional to the square of the model's weights, pushing every weight toward smaller values so no single feature can dominate a prediction based on noise it happened to pick up from the training set.",
+          "L1 regularization, lasso, adds a penalty proportional to the absolute value of the weights instead, and its distinctive effect is that it can push some weights to exactly 0, effectively dropping those features from the model, which is why it doubles as a feature-selection method, not just a variance-reduction 1.",
+          "Dropout, specific to neural networks, randomly disables a fraction of neurons on each training step, so the network can't become overly dependent on any 1 neuron or narrow combination of them, forcing it toward more redundant, more generalizable patterns instead.",
+          "Early stopping reuses the same held-out validation set from the overfitting curve directly: stop training the moment validation error starts climbing again, even though training error would keep falling if you let it run longer.",
+          "The interview-ready version: bias-variance tradeoff names the problem, regularization is 1 of the main tools for addressing it, specifically by trading a small, deliberate amount of bias for a meaningfully larger reduction in variance.",
+        ],
+        whyItMatters:
+          "A credit model with hundreds of engineered features and a comparatively small number of historical defaults is a textbook high-variance setup, and being able to name which regularization choice fits that specific shape of problem, not just that regularization was used somewhere, is what separates a real answer from a memorized 1.",
         estimatedHours: 5,
       },
     ],
@@ -849,6 +885,24 @@ export const modules: Module[] = [
         whyItMatters:
           "'The metric dropped' has at least 3 structurally different root causes, and each needs a different fix. Naming which 1 it is, out loud, using the right term, is what a hiring manager is actually listening for when they ask 'how would you debug this.'",
         estimatedHours: 6,
+      },
+      {
+        id: "data-system-or-model-triage",
+        name: "The First Question: Is This a Data Problem, a System Problem, or a Model Problem?",
+        hook: "Before debugging anything, decide which of 3 completely different explanations you're even looking at.",
+        body: [
+          "'The model's behaving wrong' hides 3 unrelated categories of actual cause, and the fix, often the right team too, is completely different for each.",
+          "Data problem: the data feeding the model is wrong or has changed, upstream of the model itself. Data drift (the previous concept) is the main case, along with a broken upstream job silently corrupting a feature, or a schema change nobody told the pipeline about.",
+          "System problem: the model and the data are both fine, but the engineering around them has a bug. Training/serving skew is the textbook case, the same conceptual feature computed 2 different ways. Config debt, a feature flag, a routing rule, a dependency bump, is another, the kind of bug found by reading a deploy log, not by re-examining the model.",
+          "Model problem: the data is representative and the system is wired correctly, but the model itself is actually wrong, either it never generalized in the first place (the bias-variance side from module 2) or the real relationship between inputs and outputs shifted (concept drift) and the model is now genuinely stale.",
+          "Triage in that order on purpose. Data and system problems are both fixable without retraining anything, and both are cheaper and faster to check than re-examining the model. Jumping straight to `maybe it needs retraining' skips the 2 explanations that are actually more common and quicker to confirm or rule out.",
+          "Reading the metrics correctly is what lets a complaint get placed into the right bucket in the first place, not just reported as `something's down.' Recall dropping while precision holds steady points somewhere different than precision dropping while recall holds steady, and confusing which 1 actually moved is a common way to end up triaging the wrong bucket entirely.",
+          "Concretely: precision dropping means the model is wrong more often specifically on what it predicts positive, worth checking whether the applicant population itself shifted, a data question. Recall dropping means it's missing more of what's actually positive, worth checking whether the definition of positive changed underneath it (concept drift, a model question) or whether a feature that used to carry signal went stale or broke somewhere upstream (a data or system question).",
+          "Say the bucket out loud before naming a specific cause. `This looks like a data problem, let me check drift first' is a stronger opening line in an interview than jumping straight to `the model needs retraining,' even when retraining turns out to be right, because it shows the triage happened instead of just announcing the conclusion.",
+        ],
+        whyItMatters:
+          "This is the meta-skill underneath the drift-taxonomy and 4-way-diagnosis concepts around it in this module. Naming it explicitly as the first move is what turns `I know several possible causes' into `I know how to find out which 1 it actually is, cheapest check first.'",
+        estimatedHours: 4,
       },
       {
         id: "four-way-production-diagnosis",
